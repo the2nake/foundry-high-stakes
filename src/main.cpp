@@ -214,15 +214,38 @@ void disp_vel_row(int line,
   if (motors.contains(left.port) && motors.contains(right.port)) {
     pros::Motor *&mtr_l = motors[left.port];
     pros::Motor *&mtr_r = motors[right.port];
-    subzero::print(line,
-                   "%s: %.0frpm %.0fC   %s: %.0frpm %f.0C",
-                   left.name,
-                   mtr_l->get_actual_velocity(),
-                   mtr_l->get_temperature(),
-                   right.name,
-                   mtr_r->get_actual_velocity(),
-                   mtr_r->get_temperature());
+    subzero::print(
+        line,
+        "%s: %.0frpm %.0fC   %s: %.0frpm %.0fC                             ",
+        left.name,
+        mtr_l->get_actual_velocity(),
+        mtr_l->get_temperature(),
+        right.name,
+        mtr_r->get_actual_velocity(),
+        mtr_r->get_temperature());
   }
+}
+
+const char *to_str(arm_state_e state) {
+  switch (state) {
+  case arm_state_e::none:
+    return "none";
+    break;
+  case arm_state_e::carry:
+    return "carry";
+    break;
+  case arm_state_e::ready:
+    return "ready";
+    break;
+  case arm_state_e::recover:
+    return "recover";
+    break;
+  case arm_state_e::score:
+    return "score";
+    break;
+  }
+  subzero::error("[e]: to_str for arm_state_e did not match a state");
+  return "";
 }
 
 void disp_loop(void *ignore) {
@@ -238,8 +261,10 @@ void disp_loop(void *ignore) {
     disp_vel_row(1, motors, {"m_l2", PORT_L2}, {"m_r2", PORT_R2});
     disp_vel_row(2, motors, {"m_lt", PORT_LT}, {"m_rt", PORT_RT});
 
-    subzero::print(4, "lift : %.1f", mtr_h_lift->get_position());
-    subzero::print(5, "wrist: %.1f", mtr_wrist->get_position());
+    subzero::print(
+        4, "arm state: %s", to_str(sm_arm->get_curr_state_data().state));
+    subzero::print(5, "lift     : %.1f", mtr_h_lift->get_position());
+    subzero::print(6, "wrist    : %.1f", mtr_wrist->get_position());
 
     pros::delay(33);
   }
