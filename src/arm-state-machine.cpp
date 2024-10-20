@@ -1,8 +1,6 @@
 #include "devices.hpp"
 #include "subzerolib/api/logic/state-machine.ipp"
 
-// TODO: declare the thing somewhere else
-
 bool motion_complete(std::unique_ptr<pros::AbstractMotor> &mtr,
                      double thres = 3.0) {
   return std::abs(mtr->get_position() - mtr->get_target_position()) <
@@ -10,9 +8,26 @@ bool motion_complete(std::unique_ptr<pros::AbstractMotor> &mtr,
 }
 
 namespace arm {
-using exit_pair = std::pair<arm_state_e, std::function<bool()>>;
+std::atomic<arm_signal_e> arm_signal = arm_signal_e::none;
 
 const double k_thres = 3.0;
+
+bool arm_and_wrist_ready() {
+  return motion_complete(mtr_h_lift, k_thres) &&
+         motion_complete(mtr_wrist, k_thres);
+}
+
+}; // namespace arm
+
+std::unique_ptr<StateMachine<arm_state_e>> sm_arm{
+    StateMachine<arm_state_e>::Builder().with_init(arm_state_e::ready).build()};
+
+/*
+// TODO: declare the thing somewhere else
+
+using exit_pair = std::pair<arm_state_e, std::function<bool()>>;
+
+namespace arm {
 
 const double k_lift_ready = 420.0;
 const double k_lift_carry = 350.0;
@@ -25,11 +40,6 @@ const double k_wrist_score = 60.0;
 const double k_wrist_rec = 90.0;
 
 std::atomic<bool> flag_score = false;
-
-bool arm_and_wrist_ready() {
-  return motion_complete(mtr_h_lift, k_thres) &&
-         motion_complete(mtr_wrist, k_thres);
-}
 
 void ready_cb() {
   mtr_h_lift->move_absolute(k_lift_ready, 200);
@@ -69,3 +79,4 @@ std::unique_ptr<StateMachine<arm_state_e>> sm_arm{
         .with_state({arm_state_e::recover, arm::rec_cb, arm::rec_exit})
         .with_init(arm_state_e::ready)
         .build()};
+        */

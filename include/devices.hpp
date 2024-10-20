@@ -21,11 +21,13 @@ extern std::unique_ptr<pros::AbstractMotor> mtr_wrist;
 
 extern Piston p_clamp;
 
-enum class arm_state_e { none, ready, carry, score, recover };
+enum class arm_state_e { none, recovering, accepting, ready, scoring, releasing };
 extern std::unique_ptr<StateMachine<arm_state_e>> sm_arm;
 
+enum class arm_signal_e { none, score, recover };
+
 namespace arm {
-extern std::atomic<bool> flag_score;
+extern std::atomic<arm_signal_e> arm_signal;
 }
 
 /*

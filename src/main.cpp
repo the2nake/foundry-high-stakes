@@ -230,19 +230,16 @@ const char *to_str(arm_state_e state) {
   switch (state) {
   case arm_state_e::none:
     return "none";
-    break;
-  case arm_state_e::carry:
-    return "carry";
-    break;
+  case arm_state_e::recovering:
+    return "recovering";
+  case arm_state_e::accepting:
+    return "accepting";
   case arm_state_e::ready:
     return "ready";
-    break;
-  case arm_state_e::recover:
-    return "recover";
-    break;
-  case arm_state_e::score:
-    return "score";
-    break;
+  case arm_state_e::scoring:
+    return "scoring";
+  case arm_state_e::releasing:
+    return "releasing";
   }
   subzero::error("[e]: to_str for arm_state_e did not match a state");
   return "";
@@ -261,8 +258,7 @@ void disp_loop(void *ignore) {
     disp_vel_row(1, motors, {"m_l2", PORT_L2}, {"m_r2", PORT_R2});
     disp_vel_row(2, motors, {"m_lt", PORT_LT}, {"m_rt", PORT_RT});
 
-    subzero::print(
-        4, "arm state: %s", to_str(sm_arm->get_curr_state_data().state));
+    subzero::print(4, "arm state: %s", to_str(sm_arm->get_state_data().state));
     subzero::print(5, "lift     : %.1f", mtr_h_lift->get_position());
     subzero::print(6, "wrist    : %.1f", mtr_wrist->get_position());
 
@@ -286,7 +282,7 @@ void initialize() {
 
   // pros::Task graphing_task{odom_disp_loop, nullptr, "odom display task"};
   pros::Task display_exec{disp_loop, nullptr, "info display"};
-  pros::Task arm_state_exec{arm_exec_loop, nullptr, "arm motion"};
+  // pros::Task arm_state_exec{arm_exec_loop, nullptr, "arm motion"};
 }
 
 void disabled() {}
@@ -309,6 +305,8 @@ void opcontrol() {
 
   std::uint32_t prev_update = pros::millis();
   std::uint32_t *prev_update_ptr = &prev_update;
+
+  int scoring_millis = 0;
 
   while (saturnine::running) {
     // TODO: adjustments to increase accuracy along diagonals
@@ -344,9 +342,19 @@ void opcontrol() {
 
     if (master.get_digital(bind_score_arm)) {
       // TODO: set ready only if ring is present
-      arm::flag_score = true;
-    } else if (sm_arm->get_curr_state_data().state != arm_state_e::ready) {
-      arm::flag_score = false;
+      arm::arm_signal = arm_signal_e::score;
+    } else if (sm_arm->get_state_data().state != arm_state_e::ready) {
+      arm::arm_signal = arm_signal_e::none;
+    }
+
+    if (sm_arm->get_state_data().state == arm_state_e::scoring) {
+      scoring_millis += 20;
+    } else {
+      scoring_millis = 0;
+    }
+
+    if (scoring_millis >= 1000) {
+      arm::arm_signal = arm_signal_e::recover;
     }
 
     /*
