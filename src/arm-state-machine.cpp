@@ -1,5 +1,6 @@
 #include "devices.hpp"
 #include "subzerolib/api/logic/state-machine.ipp"
+#include "subzerolib/api/util/logging.hpp"
 
 bool motion_complete(std::unique_ptr<pros::AbstractMotor> &mtr,
                      double thres = 3.0) {
@@ -8,14 +9,55 @@ bool motion_complete(std::unique_ptr<pros::AbstractMotor> &mtr,
 }
 
 namespace arm {
-std::atomic<arm_signal_e> arm_signal = arm_signal_e::none;
 
 const double k_thres = 3.0;
 
-bool arm_and_wrist_ready() {
-  return motion_complete(mtr_h_lift, k_thres) &&
-         motion_complete(mtr_wrist, k_thres);
+bool ready(double lift_thres = k_thres, double wrist_thres = k_thres) {
+  return motion_complete(mtr_h_lift, lift_thres) &&
+         motion_complete(mtr_wrist, wrist_thres);
 }
+
+std::atomic<arm_signal_e> signal = arm_signal_e::none;
+arm_state_e state = arm_state_e::recovering; // TODO: tell blivia to change this
+
+arm_state_e get_state() { return state; }
+void update() {
+  switch (state) {
+  case arm_state_e::none:
+    subzero::error(
+        "[e]: arm_state_e::none set, switching to arm_state_e::recovering");
+    state = arm_state_e::recovering;
+    break;
+  case arm_state_e::recovering:
+    if (ready()) {
+      state = arm_state_e::accepting;
+    }
+    break;
+  case arm_state_e::accepting:
+    if (signal == arm_signal_e::score) {
+      state = arm_state_e::ready;
+    }
+    break;
+  case arm_state_e::ready:
+    if (ready(50.0, 30.0)) {
+      state = arm_state_e::scoring;
+    }
+    break;
+  case arm_state_e::scoring:
+    if (signal == arm_signal_e::recover) {
+      state = arm_state_e::recovering;
+    } else if (ready(6.0)) {
+      state = arm_state_e::releasing;
+    }
+    break;
+  case arm_state_e::releasing:
+    if (ready(k_thres, 15.0)) {
+      state = arm_state_e::recovering;
+    }
+    break;
+  }
+}
+void move() {}
 
 }; // namespace arm
 
