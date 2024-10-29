@@ -8,13 +8,71 @@ bool motion_complete(std::unique_ptr<pros::AbstractMotor> &mtr,
 }
 
 namespace arm {
-std::atomic<arm_signal_e> arm_signal = arm_signal_e::none;
+std::atomic<arm_signal_e> signal = arm_signal_e::none;
 
 const double k_thres = 3.0;
+const int LIFT_VEL = 200;
+const int WRIST_VEL = 70;
 
-bool arm_and_wrist_ready() {
-  return motion_complete(mtr_h_lift, k_thres) &&
-         motion_complete(mtr_wrist, k_thres);
+const double ACCEPT_LIFT_POS = 390.0;
+const double ACCEPT_WRIST_POS = -130.0;
+
+const double READY_LIFT_POS = ACCEPT_LIFT_POS;
+const double READY_WRIST_POS = -50.0;
+
+const double SCORE_LIFT_POS = 320.0;
+const double SCORE_WRIST_POS = 130.0;
+
+const double RELEASE_LIFT_POS = 600.0;
+const double RELEASE_WRIST_POS = 90.0;
+
+bool ready(double lift_thres = k_thres, double wrist_thres = k_thres) {
+  return motion_complete(mtr_h_lift, lift_thres) &&
+         motion_complete(mtr_wrist, wrist_thres);
+}
+arm_state_e state = arm_state_e::none;
+
+arm_state_e get_state() { return state; }
+
+void update() {
+  if (state == arm_state_e::recovering) {
+    if (ready()) {
+      state = arm_state_e::accepting;
+    }
+  }
+  if (state == arm_state_e::accepting) {
+    if (signal == arm_signal_e::score) {
+      state = arm_state_e::ready;
+    }
+  }
+  if (state == arm_state_e::ready) {
+    if (ready(50, 30)) {
+      state = arm_state_e::scoring;
+    }
+  }
+  if (state == arm_state_e::scoring) {
+    if (signal == arm_signal_e::recover) {
+      state = arm_state_e::recovering;
+    } else if (ready(6)) {
+      state = arm_state_e::releasing;
+    }
+  }
+  if (state == arm_state_e::releasing) {
+    if (ready(k_thres, 15) || signal == arm_signal_e::recover) {
+      state = arm_state_e::recovering;
+    }
+  }
+}
+void move(double lift_pos, double lift_vel, double wrist_pos,double wrist_vel) {
+  mtr_h_lift->move_absolute(lift_pos, lift_vel);
+  mtr_wrist->move_absolute(wrist_pos,wrist_vel);
+}
+  
+void act() {      // above equals this
+  switch (state) { // no code block, has to have colon
+  case arm_state_e::recovering:
+    break;
+  }
 }
 
 }; // namespace arm

@@ -21,15 +21,6 @@ extern std::unique_ptr<pros::AbstractMotor> mtr_wrist;
 
 extern Piston p_clamp;
 
-enum class arm_state_e { none, recovering, accepting, ready, scoring, releasing };
-extern std::unique_ptr<StateMachine<arm_state_e>> sm_arm;
-
-enum class arm_signal_e { none, score, recover };
-
-namespace arm {
-extern std::atomic<arm_signal_e> arm_signal;
-}
-
 /*
 extern std::shared_ptr<AbstractGyro> imu_1;
 extern std::shared_ptr<AbstractGyro> imu_2;
@@ -43,3 +34,26 @@ extern std::shared_ptr<Odometry> odom;
 */
 
 void initialise_devices();
+
+enum class arm_state_e {
+  none,
+  recovering,
+  accepting,
+  ready,
+  scoring,
+  releasing // possible values of the enum class
+};
+extern std::unique_ptr<StateMachine<arm_state_e>> sm_arm;
+
+enum class arm_signal_e { none, score, recover };
+
+namespace arm {
+extern std::atomic<arm_signal_e> signal;
+extern arm_state_e state; // defining the variable
+arm_state_e get_state();
+// function is supposed to update the arm state if the rules for switching to a
+// different state are met
+void update();
+// execute arm behavior; move the arm
+void act();
+} // namespace arm

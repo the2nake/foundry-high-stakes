@@ -342,9 +342,9 @@ void opcontrol() {
 
     if (master.get_digital(bind_score_arm)) {
       // TODO: set ready only if ring is present
-      arm::arm_signal = arm_signal_e::score;
+      arm::signal = arm_signal_e::score;
     } else if (sm_arm->get_state_data().state != arm_state_e::ready) {
-      arm::arm_signal = arm_signal_e::none;
+      arm::signal = arm_signal_e::none;
     }
 
     if (sm_arm->get_state_data().state == arm_state_e::scoring) {
@@ -354,7 +354,7 @@ void opcontrol() {
     }
 
     if (scoring_millis >= 1000) {
-      arm::arm_signal = arm_signal_e::recover;
+      arm::signal = arm_signal_e::recover;
     }
 
     /*
