@@ -258,7 +258,7 @@ void disp_loop(void *ignore) {
     disp_vel_row(1, motors, {"m_l2", PORT_L2}, {"m_r2", PORT_R2});
     disp_vel_row(2, motors, {"m_lt", PORT_LT}, {"m_rt", PORT_RT});
 
-    subzero::print(4, "arm state: %s", to_str(sm_arm->get_state_data().state));
+    subzero::print(4, "arm state: %s", to_str(arm::state));
     subzero::print(5, "lift     : %.1f", mtr_h_lift->get_position());
     subzero::print(6, "wrist    : %.1f", mtr_wrist->get_position());
 
@@ -270,7 +270,8 @@ void arm_exec_loop(void *ignore) {
   std::uint32_t timestamp = pros::millis();
   std::uint32_t *prev_ptr = &timestamp;
   while (saturnine::running) {
-    sm_arm->exec_behaviour();
+    arm::update();
+    arm::act();
     pros::Task::delay_until(prev_ptr, 10);
   }
 }
@@ -282,7 +283,7 @@ void initialize() {
 
   // pros::Task graphing_task{odom_disp_loop, nullptr, "odom display task"};
   pros::Task display_exec{disp_loop, nullptr, "info display"};
-  // pros::Task arm_state_exec{arm_exec_loop, nullptr, "arm motion"};
+  //pros::Task arm_state_exec{arm_exec_loop, nullptr, "arm motion"};
 }
 
 void disabled() {}
@@ -343,11 +344,11 @@ void opcontrol() {
     if (master.get_digital(bind_score_arm)) {
       // TODO: set ready only if ring is present
       arm::signal = arm_signal_e::score;
-    } else if (sm_arm->get_state_data().state != arm_state_e::ready) {
+    } else if (arm::state != arm_state_e::ready) { // "." accesses member
       arm::signal = arm_signal_e::none;
     }
 
-    if (sm_arm->get_state_data().state == arm_state_e::scoring) {
+    if (arm::state == arm_state_e::scoring) {
       scoring_millis += 20;
     } else {
       scoring_millis = 0;
@@ -379,3 +380,4 @@ void opcontrol() {
   //   no need in GyroOdometry, everything is a smart pointer
   // delete pointers
 }
+ 

@@ -43,7 +43,7 @@ enum class arm_state_e {
   scoring,
   releasing // possible values of the enum class
 };
-extern std::unique_ptr<StateMachine<arm_state_e>> sm_arm;
+//extern std::unique_ptr<StateMachine<arm_state_e>> sm_arm;
 
 enum class arm_signal_e { none, score, recover };
 
