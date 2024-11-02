@@ -1,9 +1,12 @@
 #include "devices.hpp"
+#include "pros/screen.hpp"
 #include "subzerolib/api/logic/state-machine.ipp"
+#include <string>
 
-bool motion_complete(std::unique_ptr<pros::AbstractMotor> &mtr,
-                     double thres = 3.0) {
-  return std::abs(mtr->get_position() - mtr->get_target_position()) <
+bool motion_complete(std::unique_ptr<pros::AbstractMotor> &mtr, double pos,
+                     double thres = 3.0) { //default value
+  pros::screen::print(pros::E_TEXT_MEDIUM, 9, "%f", mtr->get_position() - pos);
+  return std::abs(mtr->get_position() - pos) <
          std::abs(thres);
 }
 
@@ -14,21 +17,21 @@ const double k_thres = 3.0;
 const int LIFT_VEL = 200;
 const int WRIST_VEL = 70;
 
-const double ACCEPT_LIFT_POS = 390.0;
+const double ACCEPT_LIFT_POS = 460.0;
 const double ACCEPT_WRIST_POS = -130.0;
 
 const double READY_LIFT_POS = ACCEPT_LIFT_POS;
 const double READY_WRIST_POS = -50.0;
 
-const double SCORE_LIFT_POS = 320.0;
-const double SCORE_WRIST_POS = 130.0;
+const double SCORE_LIFT_POS = 340.0;
+const double SCORE_WRIST_POS = 100.0;
 
-const double RELEASE_LIFT_POS = 600.0;
-const double RELEASE_WRIST_POS = 90.0;
+const double RELEASE_LIFT_POS = 660.0;
+const double RELEASE_WRIST_POS = 120.0;
 
-bool ready(double lift_thres = k_thres, double wrist_thres = k_thres) {
-  return motion_complete(mtr_h_lift, lift_thres) &&
-         motion_complete(mtr_wrist, wrist_thres);
+bool ready(double lift_pos, double wrist_pos, double lift_thres = k_thres, double wrist_thres = k_thres) {
+  return motion_complete(mtr_h_lift, lift_pos, lift_thres) &&
+         motion_complete(mtr_wrist, wrist_pos, wrist_thres);
 }
 arm_state_e state = arm_state_e::recovering;
 
@@ -36,7 +39,7 @@ arm_state_e get_state() { return state; }
 
 void update() {
   if (state == arm_state_e::recovering) {
-    if (ready()) {
+    if (ready(ACCEPT_LIFT_POS, ACCEPT_WRIST_POS)) {
       state = arm_state_e::accepting;
     }
   }
@@ -46,19 +49,19 @@ void update() {
     }
   }
   if (state == arm_state_e::ready) {
-    if (ready(50, 30)) {
+    if (ready(READY_LIFT_POS, READY_WRIST_POS, 50, 30)) {
       state = arm_state_e::scoring;
     }
   }
   if (state == arm_state_e::scoring) {
     if (signal.load() == arm_signal_e::recover) {
       state = arm_state_e::recovering;
-    } else if (ready(6)) {
+    } else if (ready(SCORE_LIFT_POS, SCORE_WRIST_POS, 6)) {
       state = arm_state_e::releasing;
     }
   }
   if (state == arm_state_e::releasing) {
-    if (ready(k_thres, 15) || signal.load() == arm_signal_e::recover) {
+    if (ready(RELEASE_LIFT_POS, SCORE_WRIST_POS, k_thres, 15) || signal.load() == arm_signal_e::recover) {
       state = arm_state_e::recovering;
     }
   }
@@ -90,7 +93,7 @@ void act() {       // above equals this
     move(SCORE_LIFT_POS, LIFT_VEL, SCORE_WRIST_POS, WRIST_VEL);
     break;
   case arm_state_e::releasing:
-    if (mtr_wrist->get_position() <= 570) {
+    if (mtr_wrist->get_position() <= 590) {
       move(RELEASE_LIFT_POS, LIFT_VEL, SCORE_WRIST_POS, WRIST_VEL);
     } else {
       move(RELEASE_LIFT_POS, LIFT_VEL, RELEASE_WRIST_POS, WRIST_VEL);

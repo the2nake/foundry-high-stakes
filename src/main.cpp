@@ -283,7 +283,7 @@ void initialize() {
 
   // pros::Task graphing_task{odom_disp_loop, nullptr, "odom display task"};
   pros::Task display_exec{disp_loop, nullptr, "info display"};
-  //pros::Task arm_state_exec{arm_exec_loop, nullptr, "arm motion"};
+  pros::Task arm_state_exec{arm_exec_loop, nullptr, "arm motion"};
 }
 
 void disabled() {}
