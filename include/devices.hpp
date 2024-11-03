@@ -1,5 +1,6 @@
 #pragma once
 
+#include "pros/distance.hpp"
 #include "subzerolib/api/chassis/tank-chassis.hpp"
 #include "subzerolib/api/control/piston.hpp"
 #include "subzerolib/api/logic/state-machine.hpp"
@@ -18,6 +19,8 @@ extern std::shared_ptr<TankChassis> chassis;
 extern std::unique_ptr<pros::AbstractMotor> mtr_h_lift;
 extern std::unique_ptr<pros::AbstractMotor> mtr_h_intake;
 extern std::unique_ptr<pros::AbstractMotor> mtr_wrist;
+
+extern std::unique_ptr<pros::Distance> distance_sensor;
 
 extern Piston p_clamp;
 

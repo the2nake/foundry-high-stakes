@@ -1,6 +1,7 @@
 #include "devices.hpp"
 
 #include "ports.h"
+#include "pros/distance.hpp"
 #include "subzerolib/api/chassis/tank-chassis.hpp"
 #include "subzerolib/api/control/piston.hpp"
 #include "subzerolib/api/odometry/gyro-odometry.hpp"
@@ -31,6 +32,8 @@ std::unique_ptr<pros::adi::DigitalOut> piston_clamp{
     new pros::adi::DigitalOut(ADI_CLAMP, false)};
 
 Piston p_clamp({std::move(piston_clamp)});
+
+std::unique_ptr<pros::Distance> distance_sensor{new pros::Distance(PORT_DISTANCE)};
 
 /*
 std::shared_ptr<AbstractGyro> imu_1{

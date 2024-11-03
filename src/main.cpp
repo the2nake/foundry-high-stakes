@@ -258,9 +258,14 @@ void disp_loop(void *ignore) {
     disp_vel_row(1, motors, {"m_l2", PORT_L2}, {"m_r2", PORT_R2});
     disp_vel_row(2, motors, {"m_lt", PORT_LT}, {"m_rt", PORT_RT});
 
-    subzero::print(4, "arm state: %s", to_str(arm::state));
-    subzero::print(5, "lift     : %.1f", mtr_h_lift->get_position());
-    subzero::print(6, "wrist    : %.1f", mtr_wrist->get_position());
+    subzero::print(4, "arm state: %s         ", to_str(arm::state));
+    subzero::print(5, "lift     : %.1f   ", mtr_h_lift->get_position());
+    subzero::print(6, "wrist    : %.1f   ", mtr_wrist->get_position());
+
+    pros::screen::print(pros::E_TEXT_MEDIUM,
+                        10,
+                        "%d             ",
+                        distance_sensor->get_distance());
 
     pros::delay(33);
   }
@@ -329,10 +334,17 @@ void opcontrol() {
 
     chassis->move(0, ctrl_throttle, 0.7 * ctrl_steer);
 
-    if (master.get_digital(bind_intake_in)) {
-      mtr_h_intake->move(127);
-    } else if (master.get_digital(bind_intake_out)) {
+    if (arm::state == arm_state_e::accepting &&
+        distance_sensor->get_distance() < 50) {
+      mtr_h_intake->brake();
+    } // else if (master.get_digital(bind_intake_in) &&
+      // arm::state != arm_state_e::none) {
+    // mtr_h_intake->brake();}
+    else if (master.get_digital(bind_intake_out)) {
       mtr_h_intake->move(-127);
+    } else if (master.get_digital(bind_intake_in) &&
+               arm::state == arm_state_e::accepting) {
+      mtr_h_intake->move(127);
     } else {
       mtr_h_intake->brake();
     }
@@ -380,4 +392,3 @@ void opcontrol() {
   //   no need in GyroOdometry, everything is a smart pointer
   // delete pointers
 }
- 

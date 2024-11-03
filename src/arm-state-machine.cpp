@@ -3,11 +3,10 @@
 #include "subzerolib/api/logic/state-machine.ipp"
 #include <string>
 
-bool motion_complete(std::unique_ptr<pros::AbstractMotor> &mtr, double pos,
-                     double thres = 3.0) { //default value
-  pros::screen::print(pros::E_TEXT_MEDIUM, 9, "%f", mtr->get_position() - pos);
-  return std::abs(mtr->get_position() - pos) <
-         std::abs(thres);
+bool motion_complete(std::unique_ptr<pros::AbstractMotor> &mtr,
+                     double pos,
+                     double thres = 3.0) { // default value
+  return std::abs(mtr->get_position() - pos) < std::abs(thres);
 }
 
 namespace arm {
@@ -26,10 +25,13 @@ const double READY_WRIST_POS = -50.0;
 const double SCORE_LIFT_POS = 340.0;
 const double SCORE_WRIST_POS = 100.0;
 
-const double RELEASE_LIFT_POS = 660.0;
+const double RELEASE_LIFT_POS = 650.0;
 const double RELEASE_WRIST_POS = 120.0;
 
-bool ready(double lift_pos, double wrist_pos, double lift_thres = k_thres, double wrist_thres = k_thres) {
+bool ready(double lift_pos,
+           double wrist_pos,
+           double lift_thres = k_thres,
+           double wrist_thres = k_thres) {
   return motion_complete(mtr_h_lift, lift_pos, lift_thres) &&
          motion_complete(mtr_wrist, wrist_pos, wrist_thres);
 }
@@ -61,7 +63,8 @@ void update() {
     }
   }
   if (state == arm_state_e::releasing) {
-    if (ready(RELEASE_LIFT_POS, SCORE_WRIST_POS, k_thres, 15) || signal.load() == arm_signal_e::recover) {
+    if (ready(RELEASE_LIFT_POS, SCORE_WRIST_POS, 8, 15) ||
+        signal.load() == arm_signal_e::recover) {
       state = arm_state_e::recovering;
     }
   }
@@ -94,16 +97,15 @@ void act() {       // above equals this
     break;
   case arm_state_e::releasing:
     if (mtr_wrist->get_position() <= 590) {
-      move(RELEASE_LIFT_POS, LIFT_VEL, SCORE_WRIST_POS, WRIST_VEL);
+      move(RELEASE_LIFT_POS, LIFT_VEL, SCORE_WRIST_POS, 100);
     } else {
-      move(RELEASE_LIFT_POS, LIFT_VEL, RELEASE_WRIST_POS, WRIST_VEL);
+      move(RELEASE_LIFT_POS, LIFT_VEL, RELEASE_WRIST_POS, 100);
     }
     break;
   case arm_state_e::none:
     break;
   }
 }
-
 }; // namespace arm
 
 /*std::unique_ptr<StateMachine<arm_state_e>> sm_arm{
