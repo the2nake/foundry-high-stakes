@@ -1,70 +1,117 @@
 #include "devices.hpp"
+#include "pros/screen.hpp"
 #include "subzerolib/api/logic/state-machine.ipp"
-#include "subzerolib/api/util/logging.hpp"
+#include <string>
 
 bool motion_complete(std::unique_ptr<pros::AbstractMotor> &mtr,
-                     double thres = 3.0) {
-  return std::abs(mtr->get_position() - mtr->get_target_position()) <
-         std::abs(thres);
+                     double pos,
+                     double thres = 3.0) { // default value
+  return std::abs(mtr->get_position() - pos) < std::abs(thres);
 }
 
 namespace arm {
+std::atomic<arm_signal_e> signal = arm_signal_e::none;
 
 const double k_thres = 3.0;
+const int LIFT_VEL = 200;
+const int WRIST_VEL = 70;
 
-bool ready(double lift_thres = k_thres, double wrist_thres = k_thres) {
-  return motion_complete(mtr_h_lift, lift_thres) &&
-         motion_complete(mtr_wrist, wrist_thres);
+const double ACCEPT_LIFT_POS = 460.0;
+const double ACCEPT_WRIST_POS = -130.0;
+
+const double READY_LIFT_POS = ACCEPT_LIFT_POS;
+const double READY_WRIST_POS = -50.0;
+
+const double SCORE_LIFT_POS = 340.0;
+const double SCORE_WRIST_POS = 100.0;
+
+const double RELEASE_LIFT_POS = 650.0;
+const double RELEASE_WRIST_POS = 120.0;
+
+bool ready(double lift_pos,
+           double wrist_pos,
+           double lift_thres = k_thres,
+           double wrist_thres = k_thres) {
+  return motion_complete(mtr_h_lift, lift_pos, lift_thres) &&
+         motion_complete(mtr_wrist, wrist_pos, wrist_thres);
 }
-
-std::atomic<arm_signal_e> signal = arm_signal_e::none;
-arm_state_e state = arm_state_e::recovering; // TODO: tell blivia to change this
+arm_state_e state = arm_state_e::recovering;
 
 arm_state_e get_state() { return state; }
+
 void update() {
-  switch (state) {
-  case arm_state_e::none:
-    subzero::error(
-        "[e]: arm_state_e::none set, switching to arm_state_e::recovering");
-    state = arm_state_e::recovering;
-    break;
-  case arm_state_e::recovering:
-    if (ready()) {
+  if (state == arm_state_e::recovering) {
+    if (ready(ACCEPT_LIFT_POS, ACCEPT_WRIST_POS)) {
       state = arm_state_e::accepting;
+    }
+  }
+  if (state == arm_state_e::accepting) {
+    if (signal.load() == arm_signal_e::score) {
+      state = arm_state_e::ready;
+    }
+  }
+  if (state == arm_state_e::ready) {
+    if (ready(READY_LIFT_POS, READY_WRIST_POS, 50, 30)) {
+      state = arm_state_e::scoring;
+    }
+  }
+  if (state == arm_state_e::scoring) {
+    if (signal.load() == arm_signal_e::recover) {
+      state = arm_state_e::recovering;
+    } else if (ready(SCORE_LIFT_POS, SCORE_WRIST_POS, 6)) {
+      state = arm_state_e::releasing;
+    }
+  }
+  if (state == arm_state_e::releasing) {
+    if (ready(RELEASE_LIFT_POS, SCORE_WRIST_POS, 8, 15) ||
+        signal.load() == arm_signal_e::recover) {
+      state = arm_state_e::recovering;
+    }
+  }
+}
+void move(double lift_pos,
+          double lift_vel,
+          double wrist_pos,
+          double wrist_vel) {
+  mtr_h_lift->move_absolute(lift_pos, lift_vel);
+  mtr_wrist->move_absolute(wrist_pos, wrist_vel);
+}
+
+void act() {       // above equals this
+  switch (state) { // no code block, has to have colon
+  case arm_state_e::recovering:
+    if (mtr_wrist->get_position() <= 0) {
+      move(ACCEPT_LIFT_POS, 200, ACCEPT_WRIST_POS, 100);
+    } else {
+      move(RELEASE_LIFT_POS, 200, ACCEPT_WRIST_POS, 100);
     }
     break;
   case arm_state_e::accepting:
-    if (signal == arm_signal_e::score) {
-      state = arm_state_e::ready;
-    }
+    move(ACCEPT_LIFT_POS, LIFT_VEL, ACCEPT_WRIST_POS, WRIST_VEL);
     break;
   case arm_state_e::ready:
-    if (ready(50.0, 30.0)) {
-      state = arm_state_e::scoring;
-    }
+    move(READY_LIFT_POS, LIFT_VEL, READY_WRIST_POS, WRIST_VEL);
     break;
   case arm_state_e::scoring:
-    if (signal == arm_signal_e::recover) {
-      state = arm_state_e::recovering;
-    } else if (ready(6.0)) {
-      state = arm_state_e::releasing;
-    }
+    move(SCORE_LIFT_POS, LIFT_VEL, SCORE_WRIST_POS, WRIST_VEL);
     break;
   case arm_state_e::releasing:
-    if (ready(k_thres, 15.0)) {
-      state = arm_state_e::recovering;
+    if (mtr_wrist->get_position() <= 590) {
+      move(RELEASE_LIFT_POS, LIFT_VEL, SCORE_WRIST_POS, 100);
+    } else {
+      move(RELEASE_LIFT_POS, LIFT_VEL, RELEASE_WRIST_POS, 100);
     }
+    break;
+  case arm_state_e::none:
     break;
   }
 }
-void move() {}
-
 }; // namespace arm
 
-std::unique_ptr<StateMachine<arm_state_e>> sm_arm{
+/*std::unique_ptr<StateMachine<arm_state_e>> sm_arm{
     StateMachine<arm_state_e>::Builder().with_init(arm_state_e::ready).build()};
 
-/*
+
 // TODO: declare the thing somewhere else
 
 using exit_pair = std::pair<arm_state_e, std::function<bool()>>;

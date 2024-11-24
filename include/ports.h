@@ -13,6 +13,8 @@
 
 #define PORT_X_ENC 11
 
+#define PORT_DISTANCE 12
+
 #define ADI_CLAMP 'a'
 
 // TODO: fix me
