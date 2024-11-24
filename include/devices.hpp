@@ -44,31 +44,9 @@ enum class arm_state_e {
   accepting,
   ready,
   scoring,
-  releasing
-};
-
-enum class arm_signal_e { none, score, recover };
-
-extern std::unique_ptr<StateMachine<arm_state_e>> sm_arm;
-
-namespace arm {
-extern std::atomic<arm_signal_e> signal;
-
-extern arm_state_e state;
-arm_state_e get_state();
-void update();
-void move();
-} // namespace arm
-
-enum class arm_state_e {
-  none,
-  recovering,
-  accepting,
-  ready,
-  scoring,
   releasing // possible values of the enum class
 };
-//extern std::unique_ptr<StateMachine<arm_state_e>> sm_arm;
+// extern std::unique_ptr<StateMachine<arm_state_e>> sm_arm;
 
 enum class arm_signal_e { none, score, recover };
 
