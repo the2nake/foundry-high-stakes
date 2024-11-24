@@ -2,10 +2,6 @@
 #include "devices.hpp"
 #include "ports.h"
 
-#include "subzerolib/api.hpp"
-
-#include <memory>
-
 // #define DEBUG
 
 namespace saturnine {

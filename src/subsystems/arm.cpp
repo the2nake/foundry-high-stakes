@@ -1,5 +1,4 @@
 #include "subsystems/arm.hpp"
-#include "subzerolib/api/util/math.hpp"
 
 void Arm::score() {
   if (this->target.load() == target_e::accept) {

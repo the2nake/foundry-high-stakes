@@ -1,6 +1,6 @@
 #pragma once
-
-#include "api.h"
+#include "pros/abstract_motor.hpp"
+#include "pros/adi.hpp"
 #include "subzerolib/api/control/pid.hpp"
 #include <atomic>
 #include <map>

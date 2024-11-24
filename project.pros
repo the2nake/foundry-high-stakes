@@ -1,7 +1,7 @@
 {
   "py/object": "pros.conductor.project.Project",
   "py/state": {
-    "project_name": "3818-high-stakes",
+    "project_name": "foundry-high-stakes",
     "target": "v5",
     "templates": {
       "kernel": {
@@ -79,7 +79,8 @@
       }
     },
     "upload_options": {
-      "description": "my darling catmull-rom <3"
+      "description": "my darling catmull-rom <3",
+      "icon": "pros"
     },
     "use_early_access": true
   }
