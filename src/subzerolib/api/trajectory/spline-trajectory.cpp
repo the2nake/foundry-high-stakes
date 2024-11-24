@@ -194,7 +194,7 @@ bool SplineTrajectory::Builder::is_accel_broken(int i) {
 }
 
 double SplineTrajectory::Builder::get_accel(int i) {
-  clamp<int>(i, 0, traj.size() - 2);
+  clamp_val<int>(i, 0, traj.size() - 2);
   auto point = traj[i + 1];
   auto prev = traj[i];
   double accel_x = (point.vx - prev.vx) / (point.t - prev.t);

@@ -11,7 +11,7 @@ void PIDF::reset() {
 
 void PIDF::update(double error) {
   uint32_t now = pros::millis();
-  double dt = (now - last_update) / 1000.0;
+  double dt = (now - last_update) / 1000.0; // in seconds
   if (std::isnan(error)) {
     return;
   }

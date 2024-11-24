@@ -21,19 +21,19 @@ std::unique_ptr<pros::MotorGroup> mtr_r{
                          pros::MotorUnits::deg)};
 std::shared_ptr<TankChassis> chassis;
 
-std::unique_ptr<pros::AbstractMotor> mtr_h_lift{
-    new pros::Motor(PORT_LIFT, pros::MotorGears::green, pros::MotorUnits::deg)};
-std::unique_ptr<pros::AbstractMotor> mtr_h_intake{new pros::Motor(
-    PORT_INTAKE, pros::MotorGears::green, pros::MotorUnits::deg)};
+std::unique_ptr<pros::AbstractMotor> mtr_intake{new pros::Motor(
+    PORT_INTAKE, pros::MotorGears::blue, pros::MotorUnits::deg)};
 std::unique_ptr<pros::AbstractMotor> mtr_wrist{
     new pros::Motor(PORT_WRIST, pros::MotorGears::red, pros::MotorUnits::deg)};
+pros::adi::Potentiometer pot{ADI_WRIST_POTENTIOMETER,
+                             pros::adi_potentiometer_type_e::E_ADI_POT_V2};
+std::unique_ptr<PIDF> wrist_pid{new PIDF(0.03, 0.0001, 0.001)};
+Arm arm{std::move(mtr_intake), std::move(mtr_wrist), pot, std::move(wrist_pid)};
 
 std::unique_ptr<pros::adi::DigitalOut> piston_clamp{
     new pros::adi::DigitalOut(ADI_CLAMP, false)};
 
-Piston p_clamp({std::move(piston_clamp)});
-
-std::unique_ptr<pros::Distance> distance_sensor{new pros::Distance(PORT_DISTANCE)};
+Piston clamp({std::move(piston_clamp)});
 
 /*
 std::shared_ptr<AbstractGyro> imu_1{
@@ -64,8 +64,7 @@ void calibrate_imus() {
 }
 
 void configure_motors() {
-  mtr_h_intake->set_brake_mode(pros::MotorBrake::brake);
-  mtr_h_lift->set_brake_mode(pros::MotorBrake::hold);
+  mtr_intake->set_brake_mode(pros::MotorBrake::brake);
   mtr_wrist->set_brake_mode(pros::MotorBrake::hold);
 }
 

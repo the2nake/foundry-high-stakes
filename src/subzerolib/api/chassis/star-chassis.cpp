@@ -33,7 +33,7 @@ void StarChassis::move_with_map() {
 
 void StarChassis::set_rot_pref(double irot_pref) {
   rot_pref = std::abs(irot_pref);
-  clamp(rot_pref, 0.0, 1.0);
+  clamp_val(rot_pref, 0.0, 1.0);
 }
 
 double StarChassis::get_max_vel() { return lin_vel; }
@@ -129,7 +129,7 @@ StarChassis::Builder::with_geometry(double iboost_radius,
 
 StarChassis::Builder &StarChassis::Builder::with_rot_pref(double irot_pref) {
   irot_pref = std::abs(irot_pref);
-  clamp(irot_pref, 0.0, 1.0);
+  clamp_val(irot_pref, 0.0, 1.0);
   this->brot_pref = irot_pref;
   return *this;
 }

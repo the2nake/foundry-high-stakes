@@ -53,7 +53,7 @@ auto shorter_turn(T h0, T hf, T circle_size = 360.0) -> decltype(hf - h0) {
 /// @param val reference to the value
 /// @param min the minimum
 /// @param max the maximum
-template <typename T> void clamp(T &val, T min, T max) {
+template <typename T> void clamp_val(T &val, T min, T max) {
   if (max < min) {
     std::swap(max, min);
   }

@@ -2,7 +2,7 @@
 #include "subzerolib/api/util/helper.hpp"
 
 void TankChassis::set_rot_pref(double i_rot_pref) {
-  clamp<double>(i_rot_pref, 0, 1);
+  clamp_val<double>(i_rot_pref, 0, 1);
   rot_pref = i_rot_pref;
 }
 
@@ -69,7 +69,7 @@ TankChassis::Builder::with_geometry(double i_track_width) {
 }
 
 TankChassis::Builder &TankChassis::Builder::with_rot_pref(double irot_pref) {
-  clamp(irot_pref, 0.0, 1.0);
+  clamp_val(irot_pref, 0.0, 1.0);
   b_rot_pref = irot_pref;
   return *this;
 }

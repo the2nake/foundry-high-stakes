@@ -19,7 +19,7 @@ public:
   /// @param rot_pref a value in the range [0.0, 1.0]
   void set_rot_pref(double irot_pref) override {
     rot_pref = std::abs(irot_pref);
-    clamp(rot_pref, 0.0, 1.0);
+    clamp_val(rot_pref, 0.0, 1.0);
   }
 
   /// @brief get the maximum velocity
@@ -75,7 +75,7 @@ public:
     /// @returns a reference to the builder object
     Builder &with_rot_pref(double irot_pref) {
       brot_pref = std::abs(irot_pref);
-      clamp(brot_pref, 0.0, 1.0);
+      clamp_val(brot_pref, 0.0, 1.0);
       return *this;
     }
 

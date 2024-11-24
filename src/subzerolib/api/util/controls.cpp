@@ -3,7 +3,7 @@
 #include <algorithm>
 double control_components_s::sum() { return lin + rot; }
 double control_components_s::sum(double rot_pref) {
-  clamp<double>(rot_pref, 0.0, 1.0);
+  clamp_val<double>(rot_pref, 0.0, 1.0);
   return (1 - rot_pref) * lin + rot_pref * rot;
 }
 
@@ -18,7 +18,7 @@ void balance_vels(std::vector<control_components_s> &vels, double max_v,
     return;
   }
 
-  clamp<double>(rot_pref, 0.0, 1.0);
+  clamp_val<double>(rot_pref, 0.0, 1.0);
 
   double max_sum = 0.0;
   for (auto &vel : vels) {

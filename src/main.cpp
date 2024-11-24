@@ -14,8 +14,7 @@ bool running = true;
 
 const pros::controller_digital_e_t bind_toggle_clamp =
     pros::E_CONTROLLER_DIGITAL_L1;
-const pros::controller_digital_e_t bind_score_arm =
-    pros::E_CONTROLLER_DIGITAL_L2;
+const pros::controller_digital_e_t bind_score = pros::E_CONTROLLER_DIGITAL_L2;
 const pros::controller_digital_e_t bind_intake_out =
     pros::E_CONTROLLER_DIGITAL_R1;
 const pros::controller_digital_e_t bind_intake_in =
@@ -127,79 +126,6 @@ void odom_disp_loop(void *ignore) {
   }
 }
 
-/*
-void score_ring() {
-  bool wrist_ready = false;
-  bool lift_ready = false;
-  switch (arm_pos) {
-  case arm_pos_e::ready:
-    lift_ready = mtr_close_to(mtr_h_lift, k_lift_top_angle);
-    wrist_ready = mtr_close_to(mtr_wrist, k_wrist_ready_angle);
-    if (!wrist_ready || !lift_ready) {
-      return;
-    }
-    scoring = true;
-    arm_pos = arm_pos_e::mid;
-    break;
-  case arm_pos_e::mid:
-    lift_ready = mtr_close_to(mtr_h_lift, k_lift_mid_angle);
-    wrist_ready = mtr_close_to(mtr_wrist, k_wrist_mid_angle);
-    if (!wrist_ready || !lift_ready) {
-      return;
-    }
-    scoring = true;
-    arm_pos = arm_pos_e::score;
-    break;
-  case arm_pos_e::score:
-    lift_ready = mtr_close_to(mtr_h_lift, k_lift_top_angle);
-    wrist_ready = mtr_close_to(mtr_wrist, k_wrist_score_end_angle);
-    if (!wrist_ready || !lift_ready) {
-      return;
-    }
-    scoring = false;
-    arm_pos = arm_pos_e::ready;
-    break;
-  case arm_pos_e::descore: // NOTE: intentionally has no break; statement
-  case arm_pos_e::invalid:
-    arm_pos = arm_pos_e::ready;
-    break;
-  }
-}
-
-void move_arm() {
-  switch (arm_pos) {
-  case arm_pos_e::ready:
-    mtr_h_lift->move_absolute(k_lift_top_angle, 200);
-    // TODO: fix me
-    if (mtr_h_lift->get_position() > k_lift_mid_angle) {
-      mtr_wrist->move_absolute(k_wrist_ready_angle, 60);
-    } else {
-      mtr_wrist->move_absolute(k_wrist_mid_angle, 60);
-    }
-    break;
-  case arm_pos_e::mid:
-    mtr_h_lift->move_absolute(k_lift_mid_angle, 150);
-    mtr_wrist->move_absolute(k_wrist_mid_angle, 20);
-    break;
-  case arm_pos_e::descore:
-    mtr_h_lift->move_absolute(k_lift_bottom_angle, 100);
-    mtr_wrist->move_absolute(k_wrist_score_trans_angle, 60);
-    break;
-  case arm_pos_e::score:
-    mtr_h_lift->move_absolute(k_lift_top_angle, 100);
-    if (mtr_h_lift->get_position() > k_lift_score_thres) {
-      mtr_wrist->move_absolute(k_wrist_score_end_angle, 60);
-    } else {
-      mtr_wrist->move_absolute(k_wrist_score_trans_angle, 60);
-    }
-    break;
-  case arm_pos_e::invalid:
-    arm_pos = arm_pos_e::ready;
-    break;
-  }
-}
-*/
-
 struct named_port_s {
   const char *name;
   int port;
@@ -226,31 +152,12 @@ void disp_vel_row(int line,
   }
 }
 
-const char *to_str(arm_state_e state) {
-  switch (state) {
-  case arm_state_e::none:
-    return "none";
-  case arm_state_e::recovering:
-    return "recovering";
-  case arm_state_e::accepting:
-    return "accepting";
-  case arm_state_e::ready:
-    return "ready";
-  case arm_state_e::scoring:
-    return "scoring";
-  case arm_state_e::releasing:
-    return "releasing";
-  }
-  subzero::error("[e]: to_str for arm_state_e did not match a state");
-  return "";
-}
-
 void disp_loop(void *ignore) {
   // get the list of all motors
-  auto devs = pros::Motor::get_all_devices();
+  auto devices = pros::Motor::get_all_devices();
   std::map<int, pros::Motor *> motors;
-  for (auto &dev : devs) {
-    motors.insert(std::pair<int, pros::Motor *>(dev.get_port(), &dev));
+  for (auto &device : devices) {
+    motors.insert(std::pair<int, pros::Motor *>(device.get_port(), &device));
   }
 
   while (saturnine::running) {
@@ -258,14 +165,8 @@ void disp_loop(void *ignore) {
     disp_vel_row(1, motors, {"m_l2", PORT_L2}, {"m_r2", PORT_R2});
     disp_vel_row(2, motors, {"m_lt", PORT_LT}, {"m_rt", PORT_RT});
 
-    subzero::print(4, "arm state: %s         ", to_str(arm::state));
-    subzero::print(5, "lift     : %.1f   ", mtr_h_lift->get_position());
-    subzero::print(6, "wrist    : %.1f   ", mtr_wrist->get_position());
-
-    pros::screen::print(pros::E_TEXT_MEDIUM,
-                        10,
-                        "%d             ",
-                        distance_sensor->get_distance());
+    subzero::print(3, "intake: %.0fC  ", arm.intake_temp());
+    subzero::print(4, "wrist : %.0fC  ", arm.wrist_temp());
 
     pros::delay(33);
   }
@@ -275,8 +176,7 @@ void arm_exec_loop(void *ignore) {
   std::uint32_t timestamp = pros::millis();
   std::uint32_t *prev_ptr = &timestamp;
   while (saturnine::running) {
-    arm::update();
-    arm::act();
+    arm.execute();
     pros::Task::delay_until(prev_ptr, 10);
   }
 }
@@ -334,40 +234,20 @@ void opcontrol() {
 
     chassis->move(0, ctrl_throttle, 0.7 * ctrl_steer);
 
-    if (arm::state == arm_state_e::accepting &&
-        distance_sensor->get_distance() < 50) {
-      mtr_h_intake->brake();
-    } // else if (master.get_digital(bind_intake_in) &&
-      // arm::state != arm_state_e::none) {
-    // mtr_h_intake->brake();}
-    else if (master.get_digital(bind_intake_out)) {
-      mtr_h_intake->move(-127);
-    } else if (master.get_digital(bind_intake_in) &&
-               arm::state == arm_state_e::accepting) {
-      mtr_h_intake->move(127);
+    if (master.get_digital(bind_score)) {
+      arm.score();
+    }
+
+    if (master.get_digital(bind_intake_in)) {
+      arm.move_intake(12.0);
+    } else if (master.get_digital(bind_intake_out)) {
+      arm.override_intake(-12.0);
     } else {
-      mtr_h_intake->brake();
+      arm.stop_intake();
     }
 
     if (master.get_digital_new_press(bind_toggle_clamp)) {
-      p_clamp.toggle();
-    }
-
-    if (master.get_digital(bind_score_arm)) {
-      // TODO: set ready only if ring is present
-      arm::signal = arm_signal_e::score;
-    } else if (arm::state != arm_state_e::ready) { // "." accesses member
-      arm::signal = arm_signal_e::none;
-    }
-
-    if (arm::state == arm_state_e::scoring) {
-      scoring_millis += 20;
-    } else {
-      scoring_millis = 0;
-    }
-
-    if (scoring_millis >= 1000) {
-      arm::signal = arm_signal_e::recover;
+      clamp.toggle();
     }
 
     /*
