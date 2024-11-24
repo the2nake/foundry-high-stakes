@@ -16,16 +16,15 @@ PurePursuitController::PurePursuitController(
       pos_exit_condition(std::move(ipos_exit_condition)) {}
 
 void PurePursuitController::follow(std::vector<pose_s> iwaypoints,
-                                   double lookahead, int ms_timeout,
+                                   double lookahead,
+                                   int ms_timeout,
                                    int iresolution) {
   pos_exit_condition->reset();
   waypoints = iwaypoints;
   resolution = std::max(1, iresolution);
   lookahead = std::abs(lookahead);
 
-  while (!mutex.take(5)) {
-    pros::delay(1);
-  }
+  mutex.take(5);
   motion_complete = false;
   mutex.give();
 
@@ -42,6 +41,8 @@ void PurePursuitController::follow(std::vector<pose_s> iwaypoints,
       [&, goal]() -> double { return this->odom->get_pose().dist(goal); });
   pos_exit_condition_updater->start(10);
 
+  std::uint32_t prev_time = pros::millis();
+  std::uint32_t *prev_ptr = &prev_time;
   for (uint32_t duration = 0; duration < ms_timeout;
        duration = pros::millis() - start) {
     curr_pose = odom->get_pose();
@@ -49,8 +50,7 @@ void PurePursuitController::follow(std::vector<pose_s> iwaypoints,
     for (int i = 0; i < resolution; ++i) {
       auto check_pose = lerp(prev_pose, curr_pose, i * 1.0 / resolution);
       seek_circle = circle_s(check_pose, lookahead);
-      while (waypoints.size() > 1 &&
-             seek_circle.contains(waypoints[1])) {
+      while (waypoints.size() > 1 && seek_circle.contains(waypoints[1])) {
         waypoints.erase(waypoints.begin());
       }
     }
@@ -64,23 +64,24 @@ void PurePursuitController::follow(std::vector<pose_s> iwaypoints,
     }
 
     prev_pose = curr_pose;
-    pros::delay(10); // TODO: change to uniform timings
+    pros::Task::delay_until(prev_ptr, 10);
   }
 
   pos_exit_condition_updater->stop();
 
   controller->brake();
-  while (!mutex.take(5)) {
-    pros::delay(1);
-  }
+  mutex.take(5);
   motion_complete = true;
   mutex.give();
 
-  subzero::log("[i]: pure pursuit to (%.02f, %.02f) @ %.0f done", goal.x,
-               goal.y, goal.h);
+  subzero::log("[i]: pure pursuit to (%.02f, %.02f) @ %.0f done",
+               goal.x,
+               goal.y,
+               goal.h);
 }
 
-void PurePursuitController::select_carrot(pose_s pose, double lookahead,
+void PurePursuitController::select_carrot(pose_s pose,
+                                          double lookahead,
                                           pose_s &carrot) {
   // select carrot pose, heading is lerped if intersection is used
   if (waypoints.size() == 1) {
