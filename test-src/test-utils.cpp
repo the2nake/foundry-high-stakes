@@ -44,6 +44,18 @@ void test_vel_balance_with_tank() {
   test(passed, "tank velocity balancing - preference to linear ratio");
 }
 
+void test_vel_sum_with_tank() {
+  std::vector<control_components_s> vels;
+  vels.push_back(control_components_s{1.0, 0.0});
+  vels.push_back(control_components_s{1.0, 0.0});
+  bool passed = true;
+  balance_vels(vels, 1.0, 0.3);
+  if (not rougheq(vels[0].sum(), 1.0)) {
+    passed = false;
+  }
+  test(passed, "tank velocity balancing - correct summed velocity");
+}
+
 enum class tank_motors_e { left, right };
 void test_map_vel_balance_with_tank() {
   // tank test
@@ -124,6 +136,7 @@ void test_binary_search_with_lamda() {
 
 int main() {
   test_vel_balance_with_tank();
+  test_vel_sum_with_tank();
   test_map_vel_balance_with_tank();
   test_binary_search();
   test_binary_search_with_lamda();

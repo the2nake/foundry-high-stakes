@@ -1,13 +1,16 @@
 #include "subzerolib/api/logic/state-machine.hpp"
 
-StateMachine::Builder &StateMachine::Builder::with_init(state_e state_name) {
+template <typename state_e>
+StateMachine<state_e>::Builder &
+StateMachine<state_e>::Builder::with_init(state_e state_name) {
   init_state = state_name;
 
   return *this;
 }
 
-StateMachine::Builder &
-StateMachine::Builder::with_state(StateMachine::state_data_s state_data) {
+template <typename state_e>
+StateMachine<state_e>::Builder &StateMachine<state_e>::Builder::with_state(
+    StateMachine<state_e>::state_data_s state_data) {
   if (blookup.find(state_data.state) == blookup.end()) {
     blookup.emplace(state_data.state, state_data);
   }
@@ -15,8 +18,9 @@ StateMachine::Builder::with_state(StateMachine::state_data_s state_data) {
   return *this;
 }
 
-StateMachine *StateMachine::Builder::build() {
-  auto obj = new StateMachine();
+template <typename state_e>
+StateMachine<state_e> *StateMachine<state_e>::Builder::build() {
+  auto obj = new StateMachine<state_e>();
 
   if (blookup.find(init_state) == blookup.end()) {
     return nullptr;

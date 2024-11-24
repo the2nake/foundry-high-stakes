@@ -38,7 +38,7 @@ public:
   /// target
   ///
   /// @param vx linear velocity (m/s) in local frame's x
-  /// @param vy linear velocity (m/s) in local frame's y'
+  /// @param vy linear velocity (m/s) in local frame's y
   /// @param ang angular velocity (rad/s)
   ///
   /// @returns a vector of velocities (lf, lm, lb, rf, rm, rb)
@@ -78,7 +78,7 @@ public:
     /// @param position the motor position
     /// @param motor a unique pointer to the motor
     /// @returns a reference to the builder object
-    Builder &with_motors(motor_pos_e position,
+    Builder &with_motor(motor_pos_e position,
                          std::unique_ptr<pros::Motor> motor);
 
     /// @brief specify a motor for the chassis
@@ -89,7 +89,7 @@ public:
     /// @param position the motor position
     /// @param motor a unique pointer to the motor
     /// @returns a reference to the builder object
-    Builder &with_motors(motor_pos_e position,
+    Builder &with_motor(motor_pos_e position,
                          std::unique_ptr<pros::AbstractMotor> motor);
 
     /// @brief specify star drive geometry

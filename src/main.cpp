@@ -1,21 +1,30 @@
 #include "main.h"
 #include "devices.hpp"
+#include "ports.h"
 
 #include "subzerolib/api.hpp"
 
-#include "pros/colors.hpp"
-#include "pros/screen.hpp"
 #include <memory>
+
+// #define DEBUG
 
 namespace saturnine {
 bool running = true;
 };
 
-// #define DEBUG
+const pros::controller_digital_e_t bind_toggle_clamp =
+    pros::E_CONTROLLER_DIGITAL_L1;
+const pros::controller_digital_e_t bind_score_arm =
+    pros::E_CONTROLLER_DIGITAL_L2;
+const pros::controller_digital_e_t bind_intake_out =
+    pros::E_CONTROLLER_DIGITAL_R1;
+const pros::controller_digital_e_t bind_intake_in =
+    pros::E_CONTROLLER_DIGITAL_R2;
 
-// TODO: test PID on the arm
-
-std::unique_ptr<Filter> filter = nullptr;
+const pros::controller_analog_e_t stick_throttle =
+    pros::E_CONTROLLER_ANALOG_LEFT_Y;
+const pros::controller_analog_e_t sticK_steer =
+    pros::E_CONTROLLER_ANALOG_RIGHT_X;
 
 // TODO: refactor, add "graph_module"?
 void odom_disp_loop(void *ignore) {
@@ -34,12 +43,16 @@ void odom_disp_loop(void *ignore) {
   const double padding = 12;
 
   while (saturnine::running) {
+    /*
     auto pose = odom->get_pose();
     past_points.push_back(pose);
     if (past_points.size() > 200) {
       past_points.erase(past_points.begin());
     }
+    */
 
+    // graph stuff
+    /*
     pros::screen::set_pen(pros::Color::black);
     pros::screen::fill_rect(graphx1 - padding,
                             graphy1 - padding,
@@ -87,6 +100,8 @@ void odom_disp_loop(void *ignore) {
         pros::screen::draw_pixel(pixel_point.x, pixel_point.y);
       }
     }
+    */
+    /*
     pros::screen::set_pen(pros::Color::white);
     subzero::print(0, "filtered pos + vel");
     subzero::print(
@@ -102,6 +117,7 @@ void odom_disp_loop(void *ignore) {
     pose = obj->get_raw_vel();
     subzero::print(
         5, "(%6.3f, %6.3f) h: %5.0f", pose.x, pose.y, pose.heading());
+    */
     // Eigen::VectorXd d = obj->get_covariance().diagonal();
     // subzero::print(6, "%f %f", d(0), d(1));
     // subzero::print(7, "%f %f", d(2), d(3));
@@ -111,81 +127,262 @@ void odom_disp_loop(void *ignore) {
   }
 }
 
+/*
+void score_ring() {
+  bool wrist_ready = false;
+  bool lift_ready = false;
+  switch (arm_pos) {
+  case arm_pos_e::ready:
+    lift_ready = mtr_close_to(mtr_h_lift, k_lift_top_angle);
+    wrist_ready = mtr_close_to(mtr_wrist, k_wrist_ready_angle);
+    if (!wrist_ready || !lift_ready) {
+      return;
+    }
+    scoring = true;
+    arm_pos = arm_pos_e::mid;
+    break;
+  case arm_pos_e::mid:
+    lift_ready = mtr_close_to(mtr_h_lift, k_lift_mid_angle);
+    wrist_ready = mtr_close_to(mtr_wrist, k_wrist_mid_angle);
+    if (!wrist_ready || !lift_ready) {
+      return;
+    }
+    scoring = true;
+    arm_pos = arm_pos_e::score;
+    break;
+  case arm_pos_e::score:
+    lift_ready = mtr_close_to(mtr_h_lift, k_lift_top_angle);
+    wrist_ready = mtr_close_to(mtr_wrist, k_wrist_score_end_angle);
+    if (!wrist_ready || !lift_ready) {
+      return;
+    }
+    scoring = false;
+    arm_pos = arm_pos_e::ready;
+    break;
+  case arm_pos_e::descore: // NOTE: intentionally has no break; statement
+  case arm_pos_e::invalid:
+    arm_pos = arm_pos_e::ready;
+    break;
+  }
+}
+
+void move_arm() {
+  switch (arm_pos) {
+  case arm_pos_e::ready:
+    mtr_h_lift->move_absolute(k_lift_top_angle, 200);
+    // TODO: fix me
+    if (mtr_h_lift->get_position() > k_lift_mid_angle) {
+      mtr_wrist->move_absolute(k_wrist_ready_angle, 60);
+    } else {
+      mtr_wrist->move_absolute(k_wrist_mid_angle, 60);
+    }
+    break;
+  case arm_pos_e::mid:
+    mtr_h_lift->move_absolute(k_lift_mid_angle, 150);
+    mtr_wrist->move_absolute(k_wrist_mid_angle, 20);
+    break;
+  case arm_pos_e::descore:
+    mtr_h_lift->move_absolute(k_lift_bottom_angle, 100);
+    mtr_wrist->move_absolute(k_wrist_score_trans_angle, 60);
+    break;
+  case arm_pos_e::score:
+    mtr_h_lift->move_absolute(k_lift_top_angle, 100);
+    if (mtr_h_lift->get_position() > k_lift_score_thres) {
+      mtr_wrist->move_absolute(k_wrist_score_end_angle, 60);
+    } else {
+      mtr_wrist->move_absolute(k_wrist_score_trans_angle, 60);
+    }
+    break;
+  case arm_pos_e::invalid:
+    arm_pos = arm_pos_e::ready;
+    break;
+  }
+}
+*/
+
+struct named_port_s {
+  const char *name;
+  int port;
+};
+
+void disp_vel_row(int line,
+                  std::map<int, pros::Motor *> &motors,
+                  named_port_s left,
+                  named_port_s right) {
+  left.port = std::abs(left.port);
+  right.port = std::abs(right.port);
+  if (motors.contains(left.port) && motors.contains(right.port)) {
+    pros::Motor *&mtr_l = motors[left.port];
+    pros::Motor *&mtr_r = motors[right.port];
+    subzero::print(
+        line,
+        "%s: %.0frpm %.0fC   %s: %.0frpm %.0fC                             ",
+        left.name,
+        mtr_l->get_actual_velocity(),
+        mtr_l->get_temperature(),
+        right.name,
+        mtr_r->get_actual_velocity(),
+        mtr_r->get_temperature());
+  }
+}
+
+const char *to_str(arm_state_e state) {
+  switch (state) {
+  case arm_state_e::none:
+    return "none";
+  case arm_state_e::recovering:
+    return "recovering";
+  case arm_state_e::accepting:
+    return "accepting";
+  case arm_state_e::ready:
+    return "ready";
+  case arm_state_e::scoring:
+    return "scoring";
+  case arm_state_e::releasing:
+    return "releasing";
+  }
+  subzero::error("[e]: to_str for arm_state_e did not match a state");
+  return "";
+}
+
+void disp_loop(void *ignore) {
+  // get the list of all motors
+  auto devs = pros::Motor::get_all_devices();
+  std::map<int, pros::Motor *> motors;
+  for (auto &dev : devs) {
+    motors.insert(std::pair<int, pros::Motor *>(dev.get_port(), &dev));
+  }
+
+  while (saturnine::running) {
+    disp_vel_row(0, motors, {"m_l1", PORT_L1}, {"m_r1", PORT_R1});
+    disp_vel_row(1, motors, {"m_l2", PORT_L2}, {"m_r2", PORT_R2});
+    disp_vel_row(2, motors, {"m_lt", PORT_LT}, {"m_rt", PORT_RT});
+
+    subzero::print(4, "arm state: %s         ", to_str(arm::state));
+    subzero::print(5, "lift     : %.1f   ", mtr_h_lift->get_position());
+    subzero::print(6, "wrist    : %.1f   ", mtr_wrist->get_position());
+
+    pros::screen::print(pros::E_TEXT_MEDIUM,
+                        10,
+                        "%d             ",
+                        distance_sensor->get_distance());
+
+    pros::delay(33);
+  }
+}
+
+void arm_exec_loop(void *ignore) {
+  std::uint32_t timestamp = pros::millis();
+  std::uint32_t *prev_ptr = &timestamp;
+  while (saturnine::running) {
+    arm::update();
+    arm::act();
+    pros::Task::delay_until(prev_ptr, 10);
+  }
+}
+
 void initialize() {
   subzero::set_log_area(0, 18, 480, 240);
 
   initialise_devices();
 
-  pros::Task graphing_task{odom_disp_loop, nullptr, "odom display task"};
+  // pros::Task graphing_task{odom_disp_loop, nullptr, "odom display task"};
+  pros::Task display_exec{disp_loop, nullptr, "info display"};
+  pros::Task arm_state_exec{arm_exec_loop, nullptr, "arm motion"};
 }
 
 void disabled() {}
 
 void competition_initialize() {}
 
+void autonomous() {}
+
 void opcontrol() {
 #ifdef DEBUG
   autonomous();
 #endif
+
   pros::Controller master(pros::E_CONTROLLER_MASTER);
+  /*
   auto pose = odom->get_pose();
   if (std::isnan(pose.h))
     pose.h = 0.0;
-
-#ifdef ROTATION_CONTROL_PID
-  PIDF angle_pid(0.02, 0.0, 0.0008);
-  double target_angle = pose.h;
-#endif
+  */
 
   std::uint32_t prev_update = pros::millis();
   std::uint32_t *prev_update_ptr = &prev_update;
 
+  int scoring_millis = 0;
+
   while (saturnine::running) {
     // TODO: adjustments to increase accuracy along diagonals
     // model as a polar radial percentage of a rounded circle?
-    double ctrl_x = master.get_analog(ANALOG_RIGHT_X) / 127.0;
-    double ctrl_y = master.get_analog(ANALOG_RIGHT_Y) / 127.0;
-    double ctrl_rx = master.get_analog(ANALOG_LEFT_X) / 127.0;
-#ifdef ROTATION_CONTROL_PID
-    double ctrl_ry = master.get_analog(ANALOG_LEFT_Y) / 127.0;
-#endif
+    /*
+    double ctrl_rx = master.get_analog(ANALOG_RIGHT_X) / 127.0;
+    double ctrl_ry = master.get_analog(ANALOG_RIGHT_Y) / 127.0;
+    double ctrl_lx = master.get_analog(ANALOG_LEFT_X) / 127.0;
+    double ctrl_ly = master.get_analog(ANALOG_LEFT_Y) / 127.0;
+    */
 
-    pose = odom->get_pose();
-    if (std::isnan(pose.h))
-      pose.h = 0.0;
-    auto vec = rotate_acw(ctrl_x, ctrl_y, pose.h);
+    double ctrl_throttle = master.get_analog(stick_throttle) / 127.0;
+    double ctrl_steer = master.get_analog(sticK_steer) / 127.0;
 
-#ifdef ROTATION_CONTROL_PID
-    if (std::abs(ctrl_rx) < 0.2 && std::abs(ctrl_ry) < 0.2) {
-      target_angle = pose.h;
+    // pose = odom->get_pose();
+    // if (std::isnan(pose.h))
+    //   pose.h = 0.0;
+    // auto vec = rotate_acw(ctrl_x, ctrl_y, pose.h);
+
+    chassis->move(0, ctrl_throttle, 0.7 * ctrl_steer);
+
+    if (arm::state == arm_state_e::accepting &&
+        distance_sensor->get_distance() < 50) {
+      mtr_h_intake->brake();
+    } // else if (master.get_digital(bind_intake_in) &&
+      // arm::state != arm_state_e::none) {
+    // mtr_h_intake->brake();}
+    else if (master.get_digital(bind_intake_out)) {
+      mtr_h_intake->move(-127);
+    } else if (master.get_digital(bind_intake_in) &&
+               arm::state == arm_state_e::accepting) {
+      mtr_h_intake->move(127);
     } else {
-      target_angle = 90 - in_deg(atan2(ctrl_ry, ctrl_rx));
+      mtr_h_intake->brake();
     }
-    auto angle_err = shorter_turn(pose.h, target_angle, 360.0);
-    angle_pid.update(angle_err);
-    if (std::abs(angle_err) > 1 &&
-        std::abs(angle_pid.get_output()) > 0.3) { // anti jitter
-      chassis->move(vec.x, vec.y, angle_pid.get_output());
-    } else {
-      chassis->move(vec.x, vec.y, 0.5 * angle_pid.get_output());
-    }
-#else
-    chassis->move(vec.x, vec.y, 0.75 * ctrl_rx);
-#endif
 
+    if (master.get_digital_new_press(bind_toggle_clamp)) {
+      p_clamp.toggle();
+    }
+
+    if (master.get_digital(bind_score_arm)) {
+      // TODO: set ready only if ring is present
+      arm::signal = arm_signal_e::score;
+    } else if (arm::state != arm_state_e::ready) { // "." accesses member
+      arm::signal = arm_signal_e::none;
+    }
+
+    if (arm::state == arm_state_e::scoring) {
+      scoring_millis += 20;
+    } else {
+      scoring_millis = 0;
+    }
+
+    if (scoring_millis >= 1000) {
+      arm::signal = arm_signal_e::recover;
+    }
+
+    /*
     if (master.get_digital_new_press(pros::E_CONTROLLER_DIGITAL_B)) {
       if (odom->is_enabled()) {
         odom->set_enabled(false);
       } else {
         odom->set_enabled(true);
       }
-    }
+    }*/
 
-    if (master.get_digital_new_press(pros::E_CONTROLLER_DIGITAL_A))
-      odom->set_heading(0);
+    // if (master.get_digital_new_press(pros::E_CONTROLLER_DIGITAL_A))
+    //   odom->set_heading(0);
 
-    // high update rate, as imu data comes in every 10 ms
-    pros::Task::delay_until(prev_update_ptr, 10);
+    pros::Task::delay_until(prev_update_ptr, 20);
   }
 
   // garbage collection, good practice

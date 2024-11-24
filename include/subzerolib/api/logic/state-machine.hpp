@@ -3,12 +3,9 @@
 #include <functional>
 #include <map>
 
-class StateMachine {
+// note: state_e::none must exist
+template <typename state_e> class StateMachine {
 public:
-  enum class state_e {
-    none,
-  };
-
   struct state_data_s {
     state_data_s(state_e istate = state_e::none,
                  std::function<void()> ibehaviour = nullptr,
@@ -22,7 +19,7 @@ public:
 
   /// @brief get the state data for the current state
   /// @returns the state data
-  state_data_s get_curr_state_data() { return curr_state_data; }
+  state_data_s get_state_data() { return curr_state_data; }
 
   /// @brief executes the behaviour of the current state
   void exec_behaviour() {
@@ -38,6 +35,12 @@ public:
     } while (exit);
 
     curr_state_data.behaviour();
+  }
+
+  void set_state(state_e state) {
+    if (name_state_lookup.contains(state)) {
+      curr_state_data = name_state_lookup[state];
+    }
   }
 
 private:

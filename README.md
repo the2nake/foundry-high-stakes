@@ -8,7 +8,7 @@ The codebase for a certain team of 3818, currently consisting of 4 members. The 
 
 ### Teleop
 
-- Control code for asterisk and X drivetrain types
+- Control code for tank, asterisk and X drivetrain types
 
 ### Motion Algorithms
 

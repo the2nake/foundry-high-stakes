@@ -69,7 +69,7 @@ std::vector<double> StarChassis::get_wheel_max() {
 }
 
 StarChassis::Builder &
-StarChassis::Builder::with_motors(StarChassis::motor_pos_e position,
+StarChassis::Builder::with_motor(StarChassis::motor_pos_e position,
                                   std::unique_ptr<pros::AbstractMotor> motor) {
   if (motor == nullptr) {
     return *this;
@@ -98,10 +98,10 @@ StarChassis::Builder::with_motors(StarChassis::motor_pos_e position,
 }
 
 StarChassis::Builder &
-StarChassis::Builder::with_motors(StarChassis::motor_pos_e position,
+StarChassis::Builder::with_motor(StarChassis::motor_pos_e position,
                                   std::unique_ptr<pros::Motor> motor) {
   std::unique_ptr<pros::AbstractMotor> ptr(std::move(motor));
-  return with_motors(position, std::move(ptr));
+  return with_motor(position, std::move(ptr));
 }
 
 bool StarChassis::Builder::try_copy(
