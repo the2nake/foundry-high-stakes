@@ -1,8 +1,8 @@
 #pragma once
 
+#include "pros/rtos.hpp"
 #include <atomic>
 #include <cmath>
-#include "pros/rtos.hpp"
 
 class PIDF {
 public:
@@ -18,6 +18,8 @@ public:
   /// @returns a PIDF object
   PIDF(double ikp, double iki, double ikd, double iff = 0)
       : kp(ikp), ki(iki), kd(ikd), ff(iff) {}
+
+  PIDF(PIDF &&other) : kp(other.kp), ki(other.ki), kd(other.kd), ff(other.ff) {}
 
   /// @brief reset the controller
   ///
@@ -41,7 +43,8 @@ public:
   ///
   /// @param error the error to the target reading. usually calculated as
   /// (target - current)
-  void update(double error);
+  /// @returns the output of the controller
+  double update(double error);
 
   /// @brief get the output of the controller
   /// @returns the output value

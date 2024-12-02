@@ -16,12 +16,9 @@ struct AbstractEncoder {
 struct AbstractRotationEncoder : public AbstractEncoder, public pros::Rotation {
   /// @brief create an object to forward function calls to a rotation sensor
   /// @param iport the port of the sensor
-  /// @param rev if it should be reversed
   /// @returns an abstract encoder object
-  AbstractRotationEncoder(std::uint8_t iport, bool rev)
-      : pros::Rotation(iport) {
+  AbstractRotationEncoder(std::uint8_t iport) : pros::Rotation(iport) {
     pros::Rotation::set_data_rate(5);
-    pros::Rotation::set_reversed(rev);
   }
 
   /// @brief get the degree measurement

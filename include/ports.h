@@ -11,12 +11,15 @@
 #define PORT_INTAKE 11
 
 #define ADI_CLAMP 'a'
+#define ADI_FLIPPER 'h'
 #define ADI_WRIST_POTENTIOMETER {16, 'a'}
+#define PORT_ARM_ROTATION 12 // TODO: fixme
+
+#define PORT_IMU 18
+#define PORT_X_ENC 9
+#define PORT_Y_ENC 10
 
 // TODO: fix me
 
 #define PORT_IMU1 8
 #define PORT_IMU2 9
-
-#define PORT_X_ENC 12
-#define PORT_Y_ENC 13

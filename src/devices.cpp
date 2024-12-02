@@ -7,6 +7,7 @@
 // #include "subzerolib/api/odometry/gyro-odometry.hpp"
 #include "subzerolib/api/odometry/kf-odometry.hpp"
 // #include "subzerolib/api/sensors/abstract-mean-gyro.hpp"
+#include "subzerolib/api/control/pid.hpp"
 #include "subzerolib/api/util/logging.hpp"
 
 #include <memory>
@@ -25,31 +26,36 @@ std::unique_ptr<pros::AbstractMotor> mtr_intake{new pros::Motor(
     PORT_INTAKE, pros::MotorGears::blue, pros::MotorUnits::deg)};
 std::unique_ptr<pros::AbstractMotor> mtr_wrist{
     new pros::Motor(PORT_WRIST, pros::MotorGears::red, pros::MotorUnits::deg)};
-pros::adi::Potentiometer pot{ADI_WRIST_POTENTIOMETER,
-                             pros::adi_potentiometer_type_e::E_ADI_POT_V2};
-std::unique_ptr<PIDF> wrist_pid{new PIDF(0.03, 0.0001, 0.001)};
-Arm arm{std::move(mtr_intake), std::move(mtr_wrist), pot, std::move(wrist_pid)};
+
+pros::Rotation rot_arm(PORT_ARM_ROTATION);
+pros::adi::Potentiometer rot_wrist{
+    ADI_WRIST_POTENTIOMETER, pros::adi_potentiometer_type_e::E_ADI_POT_V2};
+
+PIDF arm_ctrl{0.03, 1, 0.001};
+PIDF wrist_ctrl{0.03, 1, 0.001}; // TODO: tuning
 
 std::unique_ptr<pros::adi::DigitalOut> piston_clamp{
     new pros::adi::DigitalOut(ADI_CLAMP, false)};
+std::unique_ptr<pros::adi::DigitalOut> piston_flipper{
+    new pros::adi::DigitalOut(ADI_FLIPPER, false)};
 
 Piston clamp({std::move(piston_clamp)});
+Piston flipper({std::move(piston_flipper)});
+
+std::shared_ptr<AbstractGyro> imu{
+    new AbstractImuGyro(PORT_IMU, (1 * 360.0) / (1 * 360.0 + 0))};
 
 /*
-std::shared_ptr<AbstractGyro> imu_1{
-    new AbstractImuGyro(IMU1, (1 * 360.0) / (1 * 360.0 + 0))};
 // std::shared_ptr<AbstractGyro> imu_2{
 //     new AbstractImuGyro(IMU2, (19 * 360.0) / (18 * 360.0 + 260))};
 std::shared_ptr<AbstractGyro> mean_imu{
     new AbstractMeanGyro({imu_1})}; // TODO: reconf for 2 imus
-std::shared_ptr<AbstractEncoder> enc_x{
-    new AbstractRotationEncoder(PORT_X_ENC, true)};
-std::shared_ptr<AbstractEncoder> enc_y{
-    new AbstractRotationEncoder(PORT_Y_ENC, true)};
+    */
+std::shared_ptr<AbstractEncoder> enc_x{new AbstractRotationEncoder(PORT_X_ENC)};
+std::shared_ptr<AbstractEncoder> enc_y{new AbstractRotationEncoder(PORT_Y_ENC)};
 std::shared_ptr<Odometry> odom;
-*/
 
-void calibrate_imus() {
+void calibrate_sensors() {
   auto imus = pros::Imu::get_all_devices();
   for (auto device : imus) {
     subzero::log("[i]: resetting imu on port %d", device.get_port());
@@ -60,12 +66,20 @@ void calibrate_imus() {
       pros::delay(100);
     subzero::log("[i]: imu on port %d ready", device.get_port());
   }
+  rot_wrist.calibrate();
   pros::delay(500);
 }
 
 void configure_motors() {
   mtr_intake->set_brake_mode(pros::MotorBrake::brake);
   mtr_wrist->set_brake_mode(pros::MotorBrake::hold);
+
+  // arm = std::unique_ptr<Arm>{new Arm(ArmContext{std::move(mtr_intake),
+  //                                               std::move(mtr_wrist),
+  //                                               rot_arm,
+  //                                               rot_wrist,
+  //                                               std::move(arm_ctrl),
+  //                                               std::move(wrist_ctrl)})};
 }
 
 void configure_chassis() {
@@ -163,10 +177,17 @@ void configure_odometry() {
   odom = builder.build();
   odom->auto_update();
   */
+
+  odom = GyroOdometry::Builder()
+             .with_gyro(imu)
+             .with_x_enc(enc_x, {0, 0.16 / 360.0})
+             .with_y_enc(enc_y, {-+0.0508, 0.16 / 360.0})
+             .build();
+  odom->auto_update();
 }
 
 void initialise_devices() {
-  calibrate_imus();
+  calibrate_sensors();
   configure_motors();
   configure_chassis();
   configure_odometry();

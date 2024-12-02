@@ -23,6 +23,12 @@ public:
   /// @param r rotational component
   void move(double x, double y, double r) override;
 
+  /// @brief move with basic tank drive controls
+  ///
+  /// @param left left power (-1.0 -> 1.0)
+  /// @param right right power (-1.0 -> 1.0)
+  void move_tank(double left, double right);
+
   /// @brief generate wheel velocities for a given angular and linear velocity
   /// target
   ///

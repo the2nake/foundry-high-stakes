@@ -6,6 +6,16 @@ void TankChassis::set_rot_pref(double i_rot_pref) {
   rot_pref = i_rot_pref;
 }
 
+void TankChassis::move_tank(double l, double r) {
+  if (std::abs(l) > 1.0 || std::abs(r) > 11.0) {
+    auto max = std::max(std::abs(l), std::abs(r));
+    l /= max;
+    r /= max;
+  }
+  this->left->move_voltage(l * 12000.0);
+  this->right->move_voltage(r * 12000.0);
+}
+
 void TankChassis::move(double x, double y, double r) {
   // do not clamp velocities, keep original ratios
   insert_or_modify(volts, TankChassis::motor_pos_e::left, {y, r});
