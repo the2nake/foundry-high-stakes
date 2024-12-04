@@ -1,7 +1,7 @@
 #include "subzerolib/api/odometry/kf-odometry.hpp"
 
 void KFOdometry::set_heading(double heading) {
-  GyroOdometry::set_heading(heading);
+  ImuOdometry::set_heading(heading);
   auto state = KalmanFilter::get_state();
   auto cov = KalmanFilter::get_covariance();
   state(6) = heading;
@@ -9,7 +9,7 @@ void KFOdometry::set_heading(double heading) {
 }
 
 void KFOdometry::set_position(double x, double y) {
-  GyroOdometry::set_position(x, y);
+  ImuOdometry::set_position(x, y);
   auto state = KalmanFilter::get_state();
   auto cov = KalmanFilter::get_covariance();
   state(0) = x;
@@ -28,10 +28,10 @@ pose_s KFOdometry::get_vel() {
 }
 
 void KFOdometry::update() {
-  GyroOdometry::update();
+  ImuOdometry::update();
   if (is_enabled()) {
-    auto pose = GyroOdometry::get_pose();
-    auto vel = GyroOdometry::get_vel();
+    auto pose = ImuOdometry::get_pose();
+    auto vel = ImuOdometry::get_vel();
     auto raw_accel_a = pros::Imu::get_all_devices()[0].get_accel();
     auto raw_accel_b = pros::Imu::get_all_devices()[1].get_accel();
     auto accel = rotate_acw(raw_accel_a.y, raw_accel_a.x, pose.h);
@@ -54,12 +54,12 @@ void KFOdometry::update() {
   }
 }
 
-void KFOdometry::set_enabled(bool v) { GyroOdometry::set_enabled(v); }
+void KFOdometry::set_enabled(bool v) { ImuOdometry::set_enabled(v); }
 
-bool KFOdometry::is_enabled() { return GyroOdometry::is_enabled(); }
+bool KFOdometry::is_enabled() { return ImuOdometry::is_enabled(); }
 
 std::shared_ptr<KFOdometry> KFOdometry::Builder::build() {
-  auto gyro_odom = GyroOdometry::Builder::build();
+  auto gyro_odom = ImuOdometry::Builder::build();
   auto filter = KalmanFilter::Builder::build();
 
   if (gyro_odom == nullptr || filter == nullptr) {

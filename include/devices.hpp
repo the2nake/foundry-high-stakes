@@ -15,15 +15,15 @@
 
 extern std::shared_ptr<TankChassis> chassis;
 
-extern std::unique_ptr<pros::AbstractMotor> mtr_intake;
-extern std::unique_ptr<pros::AbstractMotor> mtr_wrist;
+// extern std::unique_ptr<pros::AbstractMotor> mtr_intake;
+// extern std::unique_ptr<pros::AbstractMotor> mtr_wrist;
 
 extern pros::adi::Potentiometer rot_wrist;
 extern pros::Rotation rot_arm;
 
 extern Piston clamp;
 extern Piston flipper;
-// extern std::unique_ptr<Arm> arm;
+extern std::shared_ptr<Arm> arm;
 
 extern std::shared_ptr<AbstractGyro> imu;
 

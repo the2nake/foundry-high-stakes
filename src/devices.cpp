@@ -4,7 +4,7 @@
 // #include "pros/distance.hpp"
 #include "subzerolib/api/chassis/tank-chassis.hpp"
 #include "subzerolib/api/control/piston.hpp"
-// #include "subzerolib/api/odometry/gyro-odometry.hpp"
+// #include "subzerolib/api/odometry/imu-odometry.hpp"
 #include "subzerolib/api/odometry/kf-odometry.hpp"
 // #include "subzerolib/api/sensors/abstract-mean-gyro.hpp"
 #include "subzerolib/api/control/pid.hpp"
@@ -30,15 +30,16 @@ std::unique_ptr<pros::AbstractMotor> mtr_wrist{
 pros::Rotation rot_arm(PORT_ARM_ROTATION);
 pros::adi::Potentiometer rot_wrist{
     ADI_WRIST_POTENTIOMETER, pros::adi_potentiometer_type_e::E_ADI_POT_V2};
-
-PIDF arm_ctrl{0.03, 1, 0.001};
-PIDF wrist_ctrl{0.03, 1, 0.001}; // TODO: tuning
+std::unique_ptr<pros::Rotation> enc_arm{new pros::Rotation(PORT_ARM_ROTATION)};
+std::unique_ptr<pros::adi::Potentiometer> enc_wrist{
+    new pros::adi::Potentiometer(ADI_WRIST_POTENTIOMETER,
+                                 pros::adi_potentiometer_type_e::E_ADI_POT_V2)};
+std::shared_ptr<Arm> arm;
 
 std::unique_ptr<pros::adi::DigitalOut> piston_clamp{
     new pros::adi::DigitalOut(ADI_CLAMP, false)};
 std::unique_ptr<pros::adi::DigitalOut> piston_flipper{
     new pros::adi::DigitalOut(ADI_FLIPPER, false)};
-
 Piston clamp({std::move(piston_clamp)});
 Piston flipper({std::move(piston_flipper)});
 
@@ -74,12 +75,10 @@ void configure_motors() {
   mtr_intake->set_brake_mode(pros::MotorBrake::brake);
   mtr_wrist->set_brake_mode(pros::MotorBrake::hold);
 
-  // arm = std::unique_ptr<Arm>{new Arm(ArmContext{std::move(mtr_intake),
-  //                                               std::move(mtr_wrist),
-  //                                               rot_arm,
-  //                                               rot_wrist,
-  //                                               std::move(arm_ctrl),
-  //                                               std::move(wrist_ctrl)})};
+  arm = std::shared_ptr<Arm>{new Arm(std::move(mtr_intake),
+                                     std::move(mtr_wrist),
+                                     std::move(enc_arm),
+                                     std::move(enc_wrist))};
 }
 
 void configure_chassis() {
@@ -178,7 +177,7 @@ void configure_odometry() {
   odom->auto_update();
   */
 
-  odom = GyroOdometry::Builder()
+  odom = ImuOdometry::Builder()
              .with_gyro(imu)
              .with_x_enc(enc_x, {0, 0.16 / 360.0})
              .with_y_enc(enc_y, {-+0.0508, 0.16 / 360.0})

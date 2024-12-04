@@ -167,8 +167,8 @@ void disp_loop(void *ignore) {
     subzero::print(3, "pose: %.3f, %.3f @ %0.f   ", pose.x, pose.y, pose.h);
     subzero::print(5,
                    "intake: %.0fC  wrist: %.0fC",
-                   mtr_intake->get_temperature(),
-                   mtr_wrist->get_temperature());
+                   arm->get_intake()->get_temperature(),
+                   arm->get_wrist()->get_temperature());
 
     pros::delay(33);
   }
@@ -178,7 +178,11 @@ void arm_exec_loop(void *ignore) {
   std::uint32_t timestamp = pros::millis();
   std::uint32_t *prev_ptr = &timestamp;
   while (saturnine::running) {
-    // arm->execute();
+    if (arm != nullptr) {
+      arm->execute();
+    } else {
+      subzero::error("[e]: arm is nullptr");
+    }
     pros::Task::delay_until(prev_ptr, 10);
   }
 }
@@ -186,6 +190,7 @@ void arm_exec_loop(void *ignore) {
 void initialize() {
   subzero::set_log_area(0, 18, 480, 240);
 
+  flipper.set_state(true);
   initialise_devices();
 
   // pros::Task graphing_task{odom_disp_loop, nullptr, "odom display task"};
@@ -197,97 +202,7 @@ void disabled() {}
 
 void competition_initialize() {}
 
-void turn_to_angle(void *target_ptr) {
-  double target = *(double *)target_ptr;
-  delete (double *)target_ptr;
-
-  PIDF pid_ang{0.03, 0.015, 0.0025};
-  double error = std::nan("");
-
-  std::uint32_t timestamp = pros::millis();
-  std::uint32_t *prev_ptr = &timestamp;
-  double ms_ok = 0.0;
-  const double delta = 10.0;
-
-  while (std::abs(pid_ang.get_output()) > 2.0 || std::isnan(error) ||
-         ms_ok < 100.0) {
-    if (std::abs(error) > 2) {
-      ms_ok = 0.0;
-    } else {
-      ms_ok += delta;
-    }
-    error = shorter_turn(imu->degrees(), target);
-    chassis->move(0, 0, pid_ang.update(error));
-    pros::Task::delay_until(prev_ptr, delta);
-  }
-}
-
-void turn_to_angle(double target) { turn_to_angle(new double(target)); }
-
-pros::Task *turn_to_angle_async(double target) {
-  return new pros::Task(turn_to_angle, new double(target), "pid turning");
-}
-
-void move_distance(void *target_ptr) {
-  double target = *(double *)target_ptr;
-  delete (double *)target_ptr;
-
-  PIDF pid_lin{4.0, 0.0, 0.0};
-  PIDF pid_ang{0.03, 0.015, 0.0025};
-  double err_lin = std::nan("");
-  double err_ang = std::nan("");
-
-  double initial_angle = imu->degrees();
-  double initial_y = enc_y->get_deg();
-
-  const double dist_per_deg = 0.16 / 360.0;
-
-  double ms_ok = 0.0;
-  const double delta = 10.0;
-
-  std::uint32_t timestamp = pros::millis();
-  std::uint32_t *prev_ptr = &timestamp;
-  while (std::abs(pid_lin.get_output()) + std::abs(pid_ang.get_output()) >
-             2.0 ||
-         std::isnan(err_lin) || std::isnan(err_ang) || ms_ok < 100.0 ||
-         std::abs(err_ang) > 1.5) {
-    if (std::abs(err_lin) > 0.02) {
-      ms_ok = 0.0;
-    } else {
-      ms_ok += delta;
-    }
-    err_lin = target - (enc_y->get_deg() - initial_y) * dist_per_deg;
-    err_ang = shorter_turn(imu->degrees(), initial_angle);
-    chassis->move(0, pid_lin.update(err_lin), pid_ang.update(err_ang));
-    pros::Task::delay_until(prev_ptr, delta);
-  }
-}
-
-void move_distance(double target) { move_distance(new double(target)); }
-
-pros::Task *move_distance_async(double distance) {
-  return new pros::Task(move_distance, new double(distance), "move distance");
-}
-
-void stop_task(pros::Task *&task) {
-  if (task != nullptr) {
-    task->remove();
-    delete task;
-    task = nullptr;
-  }
-}
-
-void autonomous() {
-  pros::Task *motion = nullptr;
-  flipper.set_state(true);
-  pros::delay(200);
-  turn_to_angle(45.0);
-  turn_to_angle(330.0);
-  mtr_intake->move(127);
-  move_distance(0.07);
-}
-
-// #define DEBUG
+#define DEBUG
 
 void opcontrol() {
 #ifdef DEBUG
@@ -320,8 +235,6 @@ void opcontrol() {
   }
   */
 
-  mtr_wrist->move_absolute(0.0, 60);
-
   while (saturnine::running) {
     // TODO: adjustments to increase accuracy along diagonals
     // model as a polar radial percentage of a rounded circle?
@@ -344,9 +257,22 @@ void opcontrol() {
     //   pose.h = 0.0;
     // auto vec = rotate_acw(ctrl_x, ctrl_y, pose.h);
 
-    chassis->move(0, ctrl_throttle, 0.7 * ctrl_steer);
-    // chassis->move_tank(ctrl_left, ctrl_right);
+    // chassis->move(0, ctrl_throttle, 0.7 * ctrl_steer);
+    chassis->move_tank(ctrl_left, ctrl_right);
 
+    if (master.get_digital(bind_score)) {
+      arm->score();
+    }
+
+    if (master.get_digital(bind_intake_in)) {
+      arm->move_intake(127);
+    } else if (master.get_digital(bind_intake_out)) {
+      arm->move_intake(-127);
+    } else {
+      arm->move_intake(0);
+    }
+
+    /*
     if (master.get_digital(bind_score)) {
       mtr_wrist->move_absolute(260.0, 60);
     } else if (mtr_wrist->get_position() > 255.0) {
@@ -359,7 +285,7 @@ void opcontrol() {
       mtr_intake->move(-127);
     } else {
       mtr_intake->move(0);
-    }
+    }*/
 
     if (master.get_digital_new_press(bind_toggle_clamp)) {
       clamp.toggle();

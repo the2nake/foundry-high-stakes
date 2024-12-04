@@ -8,9 +8,9 @@
 #include "pros/rtos.hpp"
 #include <memory>
 
-class GyroOdometry : public Odometry {
+class ImuOdometry : public Odometry {
 public:
-  virtual ~GyroOdometry() {}
+  virtual ~ImuOdometry() {}
 
   /// @brief sets the heading of the odometry module
   /// @param heading the desired heading
@@ -68,7 +68,7 @@ private:
   pose_s pose{0, 0, 0};
   pose_s vel{0, 0, 0};
 
-  GyroOdometry() {}
+  ImuOdometry() {}
   void lock() {
     if (!mutex.take(5)) {
       subzero::error("[e]: gyro odom mutex failed to take");
@@ -100,7 +100,7 @@ public:
     Builder &with_y_enc(std::shared_ptr<AbstractEncoder> encoder,
                         encoder_conf_s conf);
 
-    std::shared_ptr<GyroOdometry> build();
+    std::shared_ptr<ImuOdometry> build();
 
   private:
     std::shared_ptr<AbstractGyro> gyro;
@@ -111,7 +111,7 @@ public:
   };
 
 protected:
-  GyroOdometry(GyroOdometry &&other) {
+  ImuOdometry(ImuOdometry &&other) {
     lock();
     // disable the other one
     other.mutex.take();

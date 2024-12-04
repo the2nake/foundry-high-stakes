@@ -30,6 +30,13 @@ struct AbstractRotationEncoder : public AbstractEncoder, public pros::Rotation {
   void set_deg(double deg) override { pros::Rotation::set_position(100 * deg); }
 };
 
+// TODO:
+struct AbstractPotentiometerEncoder : public AbstractEncoder,
+                                      public pros::adi::Potentiometer {
+  AbstractPotentiometerEncoder(std::uint8_t adi_port)
+      : pros::adi::Potentiometer(adi_port) {}
+};
+
 // forward function calls
 class AbstractADIEncoder : public AbstractEncoder, public pros::adi::Encoder {
 public:

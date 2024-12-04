@@ -1,20 +1,20 @@
-#include "subzerolib/api/odometry/gyro-odometry.hpp"
+#include "subzerolib/api/odometry/imu-odometry.hpp"
 #include "subzerolib/api/util/math.hpp"
 
-void GyroOdometry::set_heading(double i_h) {
+void ImuOdometry::set_heading(double i_h) {
   lock();
   this->pose.h = i_h;
   unlock();
 }
 
-void GyroOdometry::set_position(double i_x, double i_y) {
+void ImuOdometry::set_position(double i_x, double i_y) {
   lock();
   this->pose.x = i_x;
   this->pose.y = i_y;
   unlock();
 }
 
-void GyroOdometry::update() {
+void ImuOdometry::update() {
   auto now = pros::millis();
   double dt = (now - prev_timestamp) * 0.001;
   if (dt == 0.0) {
@@ -116,27 +116,27 @@ void GyroOdometry::update() {
   unlock();
 }
 
-GyroOdometry::Builder &
-GyroOdometry::Builder::with_gyro(std::shared_ptr<AbstractGyro> igyro) {
+ImuOdometry::Builder &
+ImuOdometry::Builder::with_gyro(std::shared_ptr<AbstractGyro> igyro) {
   gyro = std::move(igyro);
   return *this;
 }
 
-GyroOdometry::Builder &
-GyroOdometry::Builder::with_x_enc(std::shared_ptr<AbstractEncoder> encoder,
+ImuOdometry::Builder &
+ImuOdometry::Builder::with_x_enc(std::shared_ptr<AbstractEncoder> encoder,
                                   encoder_conf_s conf) {
   x_encs.emplace_back(std::move(encoder), conf);
   return *this;
 }
 
-GyroOdometry::Builder &
-GyroOdometry::Builder::with_y_enc(std::shared_ptr<AbstractEncoder> encoder,
+ImuOdometry::Builder &
+ImuOdometry::Builder::with_y_enc(std::shared_ptr<AbstractEncoder> encoder,
                                   encoder_conf_s conf) {
   y_encs.emplace_back(std::move(encoder), conf);
   return *this;
 }
 
-std::shared_ptr<GyroOdometry> GyroOdometry::Builder::build() {
+std::shared_ptr<ImuOdometry> ImuOdometry::Builder::build() {
   if (gyro == nullptr) {
     return nullptr;
   }
@@ -154,7 +154,7 @@ std::shared_ptr<GyroOdometry> GyroOdometry::Builder::build() {
     return nullptr;
   }
 
-  std::shared_ptr<GyroOdometry> odom(new GyroOdometry());
+  std::shared_ptr<ImuOdometry> odom(new ImuOdometry());
 
   odom->prev_timestamp = pros::millis();
   odom->gyro = gyro;
