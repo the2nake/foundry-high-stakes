@@ -39,14 +39,14 @@ void CatmullRomSpline::calculate_bernstein_coeffs() {
 }
 
 std::vector<point_s> CatmullRomSpline::sample_coordinates(int count) {
-  std::vector<point_s> sampled_points;
+  std::vector<point_s> sampled_points(count);
   if (count < 1) {
     return sampled_points;
   }
   double step = (control_points.size() - 3) / (count - 1.0);
   double u = 0.0;
   for (int i = 0; i < count; ++i) {
-    sampled_points.emplace_back(get_pos(u));
+    sampled_points[i] = get_pos(u);
     u += step;
   }
 
@@ -54,7 +54,7 @@ std::vector<point_s> CatmullRomSpline::sample_coordinates(int count) {
 }
 
 std::vector<spline_point_s> CatmullRomSpline::sample_kinematics(int count) {
-  std::vector<spline_point_s> sampled_points;
+  std::vector<spline_point_s> sampled_points(count);
   if (count < 1) {
     return sampled_points;
   }
@@ -64,13 +64,13 @@ std::vector<spline_point_s> CatmullRomSpline::sample_kinematics(int count) {
     auto pos = get_pos(u);
     double s = 0.0;
     if (i > 0) {
-      s = sampled_points.back().s + pos.dist(sampled_points.back());
+      s = sampled_points[i - 1].s + pos.dist(sampled_points[i - 1]);
     }
     auto vel = get_vel(u);
     auto accel = get_accel(u);
 
-    sampled_points.emplace_back(
-        pos.x, pos.y, s, vel.x, vel.y, accel.x, accel.y);
+    sampled_points[i] =
+        spline_point_s{pos.x, pos.y, s, vel.x, vel.y, accel.x, accel.y};
     u += step;
   }
 
