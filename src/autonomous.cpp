@@ -62,7 +62,7 @@ void turn_to_angle(void *target_ptr) {
   delete (double *)target_ptr;
 
   // ! TUNE
-  PIDF pid_ang{0.05, 0.02, 0.01}; // old kd 0.004
+  PIDF pid_ang{0.03, 0.02, 0.004}; // old kd 0.004
   double error = std::nan("");
 
   std::uint32_t timestamp = pros::millis();
@@ -156,17 +156,11 @@ void stop_task(pros::Task *&task) {
 void auto2() {
   // tuning
   // move_distance(0.6);
+  // turn_to_angle(120);
 }
 
 void autonomous() {
   auto start_ts = pros::millis();
-
-  auto2();
-
-  /*
-   */
-  /*
-  turn_to_angle(90);
 
   pros::Task *motion = nullptr;
   flipper.set_state(true);
@@ -178,7 +172,7 @@ void autonomous() {
   pros::delay(500);
   flipper.set_state(false);
 
-  move_distance(-0.16);
+  move_distance(-0.17);
   turn_to_angle(98);
   move_distance(-0.64);
   turn_to_angle(40.0);

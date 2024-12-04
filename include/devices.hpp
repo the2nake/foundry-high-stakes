@@ -23,6 +23,7 @@ extern pros::Rotation rot_arm;
 
 extern Piston clamp;
 extern Piston flipper;
+extern Piston intake_hover;
 extern std::shared_ptr<Arm> arm;
 
 extern std::shared_ptr<AbstractGyro> imu;

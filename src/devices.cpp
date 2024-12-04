@@ -30,7 +30,8 @@ std::unique_ptr<pros::AbstractMotor> mtr_wrist{
 pros::Rotation rot_arm(PORT_ARM_ROTATION);
 pros::adi::Potentiometer rot_wrist{
     ADI_WRIST_POTENTIOMETER, pros::adi_potentiometer_type_e::E_ADI_POT_V2};
-std::unique_ptr<pros::Rotation> enc_arm{new pros::Rotation(PORT_ARM_ROTATION)};
+std::unique_ptr<AbstractEncoder> enc_arm{
+    new AbstractRotationEncoder(PORT_ARM_ROTATION)};
 std::unique_ptr<pros::adi::Potentiometer> enc_wrist{
     new pros::adi::Potentiometer(ADI_WRIST_POTENTIOMETER,
                                  pros::adi_potentiometer_type_e::E_ADI_POT_V2)};
@@ -39,9 +40,13 @@ std::shared_ptr<Arm> arm;
 std::unique_ptr<pros::adi::DigitalOut> piston_clamp{
     new pros::adi::DigitalOut(ADI_CLAMP, false)};
 std::unique_ptr<pros::adi::DigitalOut> piston_flipper{
-    new pros::adi::DigitalOut(ADI_FLIPPER, false)};
+    new pros::adi::DigitalOut(ADI_FLIPPER, true)};
+std::unique_ptr<pros::adi::DigitalOut> piston_hover{
+    new pros::adi::DigitalOut(ADI_HOVER, false)};
+
 Piston clamp({std::move(piston_clamp)});
 Piston flipper({std::move(piston_flipper)});
+Piston intake_hover({std::move(piston_hover)});
 
 std::shared_ptr<AbstractGyro> imu{
     new AbstractImuGyro(PORT_IMU, (1 * 360.0) / (1 * 360.0 + 0))};
@@ -85,7 +90,7 @@ void configure_chassis() {
   chassis = TankChassis::Builder()
                 .with_motor(TankChassis::motor_pos_e::left, std::move(mtr_l))
                 .with_motor(TankChassis::motor_pos_e::right, std::move(mtr_r))
-                .with_geometry(0.25) // TODO: FIXEME
+                .with_geometry(0.248) // TODO: FIXEME
                 .with_rot_pref(0.3)
                 .with_vel(1.76)
                 .build();

@@ -15,6 +15,9 @@ const pros::controller_digital_e_t bind_intake_out =
     pros::E_CONTROLLER_DIGITAL_R1;
 const pros::controller_digital_e_t bind_intake_in =
     pros::E_CONTROLLER_DIGITAL_R2;
+
+const pros::controller_digital_e_t bind_wall = pros::E_CONTROLLER_DIGITAL_UP;
+const pros::controller_digital_e_t bind_hover = pros::E_CONTROLLER_DIGITAL_A;
 const pros::controller_digital_e_t bind_flipper = pros::E_CONTROLLER_DIGITAL_X;
 
 const pros::controller_analog_e_t stick_throttle =
@@ -202,7 +205,7 @@ void disabled() {}
 
 void competition_initialize() {}
 
-#define DEBUG
+// #define DEBUG
 
 void opcontrol() {
 #ifdef DEBUG
@@ -258,6 +261,12 @@ void opcontrol() {
     // auto vec = rotate_acw(ctrl_x, ctrl_y, pose.h);
 
     // chassis->move(0, ctrl_throttle, 0.7 * ctrl_steer);
+    if (std::abs(ctrl_left) < 0.05) {
+      ctrl_left = 0.0;
+    }
+    if (std::abs(ctrl_right) < 0.05) {
+      ctrl_right = 0.0;
+    }
     chassis->move_tank(ctrl_left, ctrl_right);
 
     if (master.get_digital(bind_score)) {
@@ -293,6 +302,14 @@ void opcontrol() {
 
     if (master.get_digital_new_press(bind_flipper)) {
       flipper.toggle();
+    }
+
+    if (master.get_digital_new_press(bind_hover)) {
+      intake_hover.toggle();
+    }
+
+    if (master.get_digital_new_press(bind_wall)) {
+      arm->toggle_wall_mode();
     }
 
     /*

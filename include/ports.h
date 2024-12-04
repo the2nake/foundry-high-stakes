@@ -12,6 +12,7 @@
 
 #define ADI_CLAMP 'a'
 #define ADI_FLIPPER 'h'
+#define ADI_HOVER 'g'
 #define ADI_WRIST_POTENTIOMETER {16, 'a'}
 #define PORT_ARM_ROTATION 12 // TODO: fixme
 
