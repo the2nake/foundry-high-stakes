@@ -2,6 +2,7 @@
 
 #include "api.h"
 #include "subzerolib/api/chassis/chassis.hpp"
+#include "subzerolib/api/chassis/model/model.hpp"
 #include "subzerolib/api/chassis/model/tank-model.hpp"
 #include "subzerolib/api/chassis/star-chassis.hpp"
 #include "subzerolib/api/chassis/tank-chassis.hpp"

@@ -22,4 +22,7 @@ struct spline_point_s : public point_s {
   double ax;
   double ay;
   double a() const { return std::hypot(ax, ay); }
+
+  // TODO: use curvature formula
+  double curvature() const { return 0.0; }
 };

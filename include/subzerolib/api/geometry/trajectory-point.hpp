@@ -16,6 +16,8 @@ struct trajectory_point_s : public point_s {
                      double i_vh = 0)
       : point_s(i_x, i_y), t(i_t), s(i_s), vx(i_vx), vy(i_vy), h(i_h),
         vh(i_vh) {}
+
+  // constructs, but will be missing t, h, and vh
   trajectory_point_s(spline_point_s &point)
       : s(point.s), point_s(point.x, point.y), vx(point.vx), vy(point.vy) {}
 
