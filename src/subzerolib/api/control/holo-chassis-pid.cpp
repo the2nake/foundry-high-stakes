@@ -55,21 +55,17 @@ HoloChassisPID::Builder::with_odom(std::shared_ptr<Odometry> iodom) {
 
 HoloChassisPID::Builder &
 HoloChassisPID::Builder::with_pid(HoloChassisPID::pid_dimension_e dimension,
-                                  double kp,
-                                  double ki,
-                                  double kd) {
-  PIDF *pid = new PIDF(kp, ki, kd, 0.0);
-  // if the dimension has been set before, it *should* disappear and memory
-  // deallocated easily
+                                  PIDF &pid) {
+  auto ptr = std::unique_ptr<PIDF>{new PIDF(std::move(pid))};
   switch (dimension) {
   case HoloChassisPID::pid_dimension_e::x:
-    bx_pid = std::unique_ptr<PIDF>(pid);
+    bx_pid = std::move(ptr);
     break;
   case HoloChassisPID::pid_dimension_e::y:
-    by_pid = std::unique_ptr<PIDF>(pid);
+    by_pid = std::move(ptr);
     break;
   case HoloChassisPID::pid_dimension_e::r:
-    br_pid = std::unique_ptr<PIDF>(pid);
+    br_pid = std::move(ptr);
     break;
   }
   return *this;
