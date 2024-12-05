@@ -62,7 +62,7 @@ void turn_to_angle(void *target_ptr) {
   delete (double *)target_ptr;
 
   // ! TUNE
-  PIDF pid_ang{0.03, 0.02, 0.004}; // old kd 0.004
+  PIDF pid_ang{0.03, 0.02, 0.004, 0.0, true}; // old kd 0.004
   double error = std::nan("");
 
   std::uint32_t timestamp = pros::millis();
@@ -100,8 +100,8 @@ void move_distance(void *target_ptr) {
   double target = *(double *)target_ptr;
   delete (double *)target_ptr;
 
-  PIDF pid_lin{3.2, 0.25, 0.45};
-  PIDF pid_ang{0.042, 0.02, 0.004};
+  PIDF pid_lin{3.2, 0.25, 0.45, 0.0, true};
+  PIDF pid_ang{0.042, 0.02, 0.004, 0.0, true};
   double err_lin = std::nan("");
   double err_ang = std::nan("");
 

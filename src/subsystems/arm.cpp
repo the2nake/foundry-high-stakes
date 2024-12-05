@@ -131,8 +131,8 @@ void Arm::execute() {
     auto err = arm_target.value() - this->enc_arm->get_deg();
     auto output =
         -this->arm_ctrl.update(arm_target.value() - this->enc_arm->get_deg());
-    if (output > 3000.0) {
-      output = 3000.0;
+    if (output > 3500.0) {
+      output = 3500.0;
     }
     this->intake->move_voltage(output);
   } else {

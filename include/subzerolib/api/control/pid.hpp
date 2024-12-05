@@ -16,10 +16,16 @@ public:
   /// @param ikd derivative gain
   /// @param iff feedfoward constant
   /// @returns a PIDF object
-  PIDF(double ikp, double iki, double ikd, double iff = 0)
-      : kp(ikp), ki(iki), kd(ikd), ff(iff) {}
+  PIDF(double ikp,
+       double iki,
+       double ikd,
+       double iff = 0,
+       bool cut_integral = false)
+      : kp(ikp), ki(iki), kd(ikd), ff(iff), cut(cut_integral) {}
 
-  PIDF(PIDF &&other) : kp(other.kp), ki(other.ki), kd(other.kd), ff(other.ff) {}
+  PIDF(PIDF &&other)
+      : kp(other.kp), ki(other.ki), kd(other.kd), ff(other.ff), cut(other.cut) {
+  }
 
   /// @brief reset the controller
   ///
@@ -55,6 +61,7 @@ private:
   const double kp;
   const double ki;
   const double kd;
+  const bool cut;
   double ff = 0.0;
 
   std::atomic<double> prev_err = std::nan("");

@@ -16,8 +16,10 @@ double PIDF::update(double error) {
     output = 0.0;
     return 0.0;
   }
+
+  bool not_same_sgn = (std::signbit(prev_err) != std::signbit(error));
   if (std::isnan(total_err) || (!std::isfinite(total_err)) ||
-      (std::signbit(prev_err) != std::signbit(error))) {
+      (this->cut && not_same_sgn)) {
     total_err = 0.0;
   }
   total_err += error * dt;
