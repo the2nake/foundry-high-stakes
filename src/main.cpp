@@ -205,6 +205,12 @@ void disabled() {}
 
 void competition_initialize() {}
 
+void deadzone(double &val, const double range) {
+  if (std::abs(val) < std::abs(range)) {
+    val = 0.0;
+  }
+}
+
 // #define DEBUG
 
 void opcontrol() {
@@ -223,20 +229,6 @@ void opcontrol() {
   std::uint32_t *prev_update_ptr = &prev_update;
 
   int scoring_millis = 0;
-  // double target = 260.0;
-
-  // std::unique_ptr<PIDF> wrist_pid{new PIDF(0.03, 1, 0.001, 0.0)};
-  /*
-  while (saturnine::running) {
-
-  double err = target - rot_wrist.get_angle(); // get_angle is inf
-  mtr_wrist->move_voltage(1000.0 * wrist_pid->update(err));
-  subzero::print(6, "%f", target);
-  subzero::print(7, "%f", err);
-
-  pros::delay(10);
-  }
-  */
 
   while (saturnine::running) {
     // TODO: adjustments to increase accuracy along diagonals
@@ -249,25 +241,27 @@ void opcontrol() {
     */
 
     double ctrl_throttle = master.get_analog(stick_throttle) / 127.0;
+    deadzone(ctrl_throttle, 0.05);
     double ctrl_steer = master.get_analog(stick_steer) / 127.0;
+    deadzone(ctrl_steer, 0.05);
     double ctrl_left =
         master.get_analog(pros::E_CONTROLLER_ANALOG_LEFT_Y) / 127.0;
+    deadzone(ctrl_left, 0.05);
     double ctrl_right =
         master.get_analog(pros::E_CONTROLLER_ANALOG_RIGHT_Y) / 127.0;
+    deadzone(ctrl_right, 0.05);
 
     // pose = odom->get_pose();
     // if (std::isnan(pose.h))
     //   pose.h = 0.0;
     // auto vec = rotate_acw(ctrl_x, ctrl_y, pose.h);
 
-    // chassis->move(0, ctrl_throttle, 0.7 * ctrl_steer);
-    if (std::abs(ctrl_left) < 0.05) {
-      ctrl_left = 0.0;
+    const bool tank = false;
+    if (tank) {
+      chassis->move_tank(ctrl_left, ctrl_right);
+    } else {
+      chassis->move(0, ctrl_throttle, 0.7 * ctrl_steer);
     }
-    if (std::abs(ctrl_right) < 0.05) {
-      ctrl_right = 0.0;
-    }
-    chassis->move_tank(ctrl_left, ctrl_right);
 
     if (master.get_digital(bind_score)) {
       arm->score();
