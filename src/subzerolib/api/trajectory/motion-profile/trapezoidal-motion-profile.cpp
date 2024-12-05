@@ -16,7 +16,7 @@ TrapezoidalMotionProfile::TrapezoidalMotionProfile(double imax_vel,
 }
 
 void TrapezoidalMotionProfile::set_resolution(double step_length) {
-  resolution = std::max(0.01, std::abs(step_length));
+  resolution = std::max(0.001, std::abs(step_length));
 }
 
 void TrapezoidalMotionProfile::generate(double distance) {
