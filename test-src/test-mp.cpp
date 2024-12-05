@@ -1,3 +1,4 @@
+#include "subzerolib/api/chassis/model/tank-model.hpp"
 #include "subzerolib/api/geometry/trajectory-point.hpp"
 #include "subzerolib/api/spline/catmull-rom.hpp"
 #include "subzerolib/api/trajectory/motion-profile/trapezoidal-motion-profile.hpp"
@@ -74,7 +75,64 @@ int find_pose_index(std::vector<spline_point_s> &vec, pose_s pose) {
   return return_index;
 }
 
-int main() {
+std::vector<trajectory_point_s> confirm_trajectory(SplineTrajectory *gen) {
+  double x = 0;
+  double y = 0;
+  double h = 0;
+  double time = 0;
+  const double dt = 0.01;
+  std::vector<trajectory_point_s> points;
+  while (time + dt <= gen->get_duration()) {
+    auto p = gen->get_at_time(time + dt);
+    x += p.vx * dt;
+    y += p.vy * dt;
+    h += p.vh * dt;
+    time += dt;
+    points.push_back(p);
+  }
+
+  auto final = gen->get_at_time(gen->get_duration());
+  printf("\033[34m[i]\033[0m: integrated position error: %.2f %.2f %.2f\n",
+         final.x - x,
+         final.y - y,
+         shorter_turn(h, final.h));
+  return points;
+}
+
+void print_trajectory(std::vector<trajectory_point_s> &points) {
+  // output the sampled points into a file
+  mkdir("test-output", 0777);
+  std::fstream file;
+  file.open("test-output/test-mp.txt", std::fstream::out);
+  file.clear();
+
+  for (auto &p : points) {
+    file << "x " << p.t << " " << p.x << std::endl;
+  }
+  for (auto &p : points) {
+    file << "vx " << p.t << " " << p.vx << std::endl;
+  }
+  for (auto &p : points) {
+    file << "y " << p.t << " " << p.y << std::endl;
+  }
+  for (auto &p : points) {
+    file << "vy " << p.t << " " << p.vy << std::endl;
+  }
+  for (auto &p : points) {
+    file << "s " << p.t << " " << p.s << std::endl;
+  }
+  for (auto &p : points) {
+    file << "v " << p.t << " " << std::hypot(p.vx, p.vy) << std::endl;
+  }
+  for (auto &p : points) {
+    file << "h " << p.t << " " << p.h << std::endl;
+  }
+  for (auto &p : points) {
+    file << "vh " << p.t << " " << p.vh << std::endl;
+  }
+}
+
+void star_drive_test() {
   // kinematics
   std::shared_ptr<Chassis> chassis{
       new StarChassisKinematics{1.73, 0.35, 0.37}
@@ -114,57 +172,41 @@ int main() {
 
   gen->print();
 
-  double x = 0;
-  double y = 0;
-  double h = 0;
-  double time = 0;
-  const double dt = 0.01;
-  std::vector<trajectory_point_s> points;
-  while (time + dt <= gen->get_duration()) {
-    // BUG: get at time has issues with heading
-    auto p = gen->get_at_time(time + dt);
-    x += p.vx * dt;
-    y += p.vy * dt;
-    h += p.vh * dt;
-    time += dt;
-    points.push_back(p);
-  }
+  auto points = confirm_trajectory(gen.get());
+  print_trajectory(points);
+}
 
-  auto final = gen->get_at_distance(gen->get_length());
-  printf("\033[34m[i]\033[0m: integrated position error: %.2f %.2f %.2f\n",
-         final.x - x,
-         final.y - y,
-         shorter_turn(h, final.h));
+void tank_drive_test() {
 
-  // output the sampled points into a file
-  mkdir("test-output", 0777);
-  std::fstream file;
-  file.open("test-output/test-mp.txt", std::fstream::out);
-  file.clear();
+  std::vector<pose_s> ctrl = {
+      pose_s{  0.0,  0.0, 0.0},
+      pose_s{  0.5,  0.5, 0.0},
+      pose_s{ -0.5,  1.5, 0.0},
+      pose_s{-0.75, 0.75, 0.0}
+  };
 
-  for (auto &p : points) {
-    file << "x " << p.t << " " << p.x << std::endl;
-  }
-  for (auto &p : points) {
-    file << "vx " << p.t << " " << p.vx << std::endl;
-  }
-  for (auto &p : points) {
-    file << "y " << p.t << " " << p.y << std::endl;
-  }
-  for (auto &p : points) {
-    file << "vy " << p.t << " " << p.vy << std::endl;
-  }
-  for (auto &p : points) {
-    file << "s " << p.t << " " << p.s << std::endl;
-  }
-  for (auto &p : points) {
-    file << "v " << p.t << " " << std::hypot(p.vx, p.vy) << std::endl;
-  }
-  for (auto &p : points) {
-    file << "h " << p.t << " " << p.h << std::endl;
-  }
-  for (auto &p : points) {
-    file << "vh " << p.t << " " << p.vh << std::endl;
-  }
+  std::shared_ptr<CatmullRomSpline> spline{new CatmullRomSpline{ctrl}};
+  spline->pad_velocity({0.5, 0.5}, {-0.25, 0.25});
+
+  std::shared_ptr<TankModel> model{
+      new TankModel{1.76, 6.0, 3.0, 0.248}
+  };
+
+  std::shared_ptr<TrapezoidalMotionProfile> profile{
+      new TrapezoidalMotionProfile{model->vel, model->accel, model->decel}
+  };
+  profile->set_resolution(0.005);
+
+  auto gen = SplineTrajectory{spline, profile, model, 400};
+  gen.print();
+
+  auto points = confirm_trajectory(&gen);
+  print_trajectory(points);
+}
+
+int main() {
+  // star_drive_test();
+  tank_drive_test();
+
   return 0;
 }

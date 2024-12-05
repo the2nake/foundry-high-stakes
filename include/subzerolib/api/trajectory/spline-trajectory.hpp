@@ -1,12 +1,12 @@
 #pragma once
 
 #include "subzerolib/api/chassis/chassis.hpp"
+#include "subzerolib/api/chassis/model/model.hpp"
+#include "subzerolib/api/geometry/pose.hpp"
 #include "subzerolib/api/geometry/trajectory-point.hpp"
 #include "subzerolib/api/spline/spline.hpp"
 #include "subzerolib/api/trajectory/motion-profile/linear-motion-profile.hpp"
 #include "subzerolib/api/trajectory/trajectory.hpp"
-
-#include "subzerolib/api/geometry/pose.hpp"
 
 #include <memory>
 #include <vector>
@@ -14,6 +14,12 @@
 class SplineTrajectory : public Trajectory {
 public:
   enum class heading_mode_e { path, pose };
+
+  // use templates instead of polymorphism?
+  SplineTrajectory(std::shared_ptr<Spline> spline,
+                   std::shared_ptr<LinearMotionProfile> profile,
+                   std::shared_ptr<Model> model,
+                   int sample_count = 200);
 
   double get_duration() override;
   double get_length() override;
@@ -40,7 +46,16 @@ public:
 private:
   SplineTrajectory() {}
 
+  void forward_pass();
+  void reverse_pass();
+  void apply_constraints();
+
+  std::vector<spline_point_s> spline_points;
   std::vector<trajectory_point_s> vec;
+  std::vector<double> max_vels;
+
+  std::shared_ptr<LinearMotionProfile> profile;
+  std::shared_ptr<Model> model;
 
 public:
   class Builder {

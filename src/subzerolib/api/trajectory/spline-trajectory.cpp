@@ -40,6 +40,84 @@ trajectory_point_s SplineTrajectory::get_at_distance(double s) {
   return lerp(vec[next_i - 1], vec[next_i], f);
 }
 
+SplineTrajectory::SplineTrajectory(
+    std::shared_ptr<Spline> spline,
+    std::shared_ptr<LinearMotionProfile> i_profile,
+    std::shared_ptr<Model> i_model,
+    int sample_count) {
+  this->model = i_model;
+  this->profile = i_profile;
+
+  this->spline_points = spline->sample_kinematics(sample_count);
+  this->profile->set_resolution(0.005);
+  this->profile->generate(this->spline_points.back().s);
+
+  // double pass: caclulate model velocity for every point, minimise between
+  // that and profile velocities, same with accel, decel
+
+  // then, going forward, restrain increasing velocities, if velocities increase
+  // too fast, slow down then, going backward, restrain decreasing velocities,
+  // if velocity is two high, slow it down
+  forward_pass();
+  reverse_pass();
+
+  // limit all velocities in the spline or copy over
+  apply_constraints();
+
+  // do check at the end if the profile is achievable
+  // check performance on vex brain
+}
+
+// set max velocities
+void SplineTrajectory::forward_pass() {
+  this->max_vels.clear();
+  this->max_vels.reserve(spline_points.size());
+
+  for (auto curr = spline_points.begin(); curr != spline_points.end(); ++curr) {
+    auto profile_constraints = this->profile->get_point_at_distance(curr->s);
+    auto model_constraints = this->model->get_constraints(curr->curvature());
+
+    double max_vel = std::min(profile_constraints.v, model_constraints.max_vel);
+    if (curr != this->spline_points.begin() && !this->max_vels.empty()) {
+      // minimise max vel based on if it is reachable
+
+      // vf^2 = v0^2 + 2adx ==> vf = sqrt(v0 * v0 + 2 * a * dx)
+      auto prev = curr - 1;
+      double dx = curr->s - prev->s;
+
+      double v0 = this->max_vels.back();
+      double a = model_constraints.max_accel;
+
+      double vf = std::sqrt(v0 * v0 + 2 * a * dx);
+      max_vel = std::min(max_vel, vf);
+    }
+
+    // ? use abs_min
+
+    this->max_vels.emplace_back(max_vel);
+  }
+}
+
+void SplineTrajectory::reverse_pass() {
+  // skip the beginning point because it cannot be constrained
+  for (auto succs =
+           std::pair{this->spline_points.rbegin(), this->max_vels.rbegin()};
+       succs.first != this->spline_points.rend() - 2 &&
+       succs.second != this->max_vels.rend() - 2;
+       ++succs.first, ++succs.second) {
+    auto curr_sp = succs.first + 1;
+    // v0 = sqrt(vf * vf - 2 * a * dx)
+    double dx = succs.first->s - curr_sp->s;
+    double vf = *succs.second;
+
+    double a = -this->model->get_constraints(curr_sp->curvature()).max_decel;
+    double v0 = std::sqrt(vf * vf - 2 * a * dx);
+
+    auto &curr_mv = *(succs.second + 1);
+    curr_mv = std::min(v0, curr_mv);
+  }
+}
+
 int SplineTrajectory::Builder::find_pose_index(pose_s pose) {
   double min_d = std::numeric_limits<double>::max();
   int return_index = 0;
@@ -51,6 +129,50 @@ int SplineTrajectory::Builder::find_pose_index(pose_s pose) {
     }
   }
   return return_index;
+}
+
+void SplineTrajectory::apply_constraints() {
+  this->vec.reserve(spline_points.size());
+  std::for_each(this->spline_points.begin(),
+                this->spline_points.end(),
+                [this](spline_point_s p) {
+                  trajectory_point_s traj_point{p};
+                  // calculate h before generating vh
+                  traj_point.h = mod(90 - in_deg(atan2(p.vy, p.vx)), 360.0);
+                  this->vec.emplace_back(traj_point);
+                });
+
+  for (auto it = std::pair(this->vec.begin(), this->max_vels.begin());
+       it.first != this->vec.end() && it.second != this->max_vels.end();
+       ++it.first, ++it.second) {
+    auto &curr = *it.first;
+    auto &prev = *(it.first - 1);
+
+    // apply velocity
+    double mult = *it.second / curr.v();
+    curr.vx *= mult;
+    curr.vy *= mult;
+
+    // calculate time using kinematics
+    if (it.first == this->vec.begin()) {
+      curr.t = 0.0;
+    } else {
+      double sum_v = curr.v() + prev.v();
+      if (rougheq(sum_v, 0.0)) {
+        curr.t = K_EPSILON;
+        // issue warning: probably spline generated incorrectly
+      } else {
+        // t = 2 * dx / (v0 + vf)
+        double dx = curr.s - prev.s;
+        curr.t = 2 * dx / sum_v;
+      }
+
+      // calculate vh as a tangent
+      prev.vh = shorter_turn(prev.h, curr.h) / curr.t;
+    }
+
+    curr.t += prev.t;
+  }
 }
 
 SplineTrajectory::Builder &

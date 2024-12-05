@@ -11,3 +11,7 @@ struct ModelConstraints {
       : max_vel(std::abs(i_vel)), max_accel(std::abs(i_accel)),
         max_decel(std::abs(i_decel)) {}
 };
+
+struct Model {
+  virtual ModelConstraints get_constraints(double curvature) const = 0;
+};
