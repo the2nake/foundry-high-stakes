@@ -24,3 +24,15 @@ template <> point_s lerp<point_s>(point_s a, point_s b, double t) {
 double point_s::dist(const point_s &b) const {
   return std::hypot(x - b.x, y - b.y);
 }
+
+double point_s::sqdist(const point_s &b) const {
+  return (x - b.x) * (x - b.x) + (y - b.y) * (y - b.y);
+}
+
+double point_s::dot(const point_s &b) const {
+  return this->x * b.x + this->y * b.y;
+}
+
+point_s point_s::proj_onto(const point_s &b) const {
+  return b * (this->dot(b) / b.dot(b));
+}

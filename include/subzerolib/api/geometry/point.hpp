@@ -5,6 +5,7 @@
 #include <cmath>
 #include <string>
 
+/// @class point / 2d vector class
 struct point_s {
   point_s(double ix = 0, double iy = 0) : x(ix), y(iy) {}
   double x;
@@ -16,6 +17,13 @@ struct point_s {
   }
 
   double dist(const point_s &b) const;
+  double sqdist(const point_s &b) const;
+
+  /// @brief calculate the dot product
+  double dot(const point_s &b) const;
+
+  /// @brief vector projection
+  point_s proj_onto(const point_s &b) const;
 
   std::string to_string() const;
 };
