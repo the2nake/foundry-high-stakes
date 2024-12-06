@@ -1,12 +1,10 @@
 #include "subzerolib/api/trajectory/spline-trajectory.hpp"
-
-#include "subzerolib/api/geometry/circle.hpp"
-#include "subzerolib/api/geometry/segment.hpp"
 #include "subzerolib/api/geometry/trajectory-point.hpp"
 #include "subzerolib/api/spline/spline.hpp"
 #include "subzerolib/api/trajectory/motion-profile/linear-motion-profile.hpp"
 #include "subzerolib/api/util/math.hpp"
 #include "subzerolib/api/util/search.hpp"
+
 #include <limits>
 
 double SplineTrajectory::get_duration() { return vec.back().t; }
