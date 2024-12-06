@@ -20,9 +20,9 @@ public:
   /// position
   /// @returns the created controller object
   PurePursuitController(
-      std::shared_ptr<MTPController> icontroller,
+      std::shared_ptr<MtpController> icontroller,
       std::shared_ptr<Odometry> iodom,
-      std::shared_ptr<ExitCondition<double>> ipos_exit_condition);
+      std::shared_ptr<Condition<double>> ipos_exit_condition);
 
   /// @brief follows the path described by the linear spline connecting the
   /// waypoints
@@ -51,9 +51,9 @@ private:
   std::vector<pose_s> waypoints;
   int resolution = 1;
 
-  std::shared_ptr<MTPController> controller;
+  std::shared_ptr<MtpController> controller;
   std::shared_ptr<Odometry> odom;
-  std::shared_ptr<ExitCondition<double>> pos_exit_condition;
+  std::shared_ptr<Condition<double>> pos_exit_condition;
 
   std::atomic<bool> motion_complete = true;
   pros::Mutex mutex;

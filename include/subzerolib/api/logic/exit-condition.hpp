@@ -5,7 +5,7 @@
 
 // concept kinda sorta stolen from lemlib
 
-template <typename T> class ExitCondition {
+template <typename T> class Condition {
 public:
   template <typename range_t> struct range_s {
     range_s(range_t imin, range_t imax, bool iinclusive = true)
@@ -36,7 +36,7 @@ public:
   /// @param imin_ms the minimum duration in milliseconds that the condition
   /// must be true for
   /// @returns the exit condition object
-  ExitCondition(range_s<T> irange, int imin_ms = 500)
+  Condition(range_s<T> irange, int imin_ms = 500)
       : range(irange), min_ms(imin_ms) {
     last_update = pros::millis();
   }

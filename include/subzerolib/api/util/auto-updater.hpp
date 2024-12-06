@@ -3,13 +3,13 @@
 #include "pros/rtos.hpp"
 #include <functional>
 
-template <typename T> class AutoUpdater {
+template <typename Input> class AutoUpdater {
 public:
   /// @brief create an object for automatic updating
   /// @param iupdater a callable that takes a single argument. usually a lambda
   /// @param igetter a callable that returns a single argument. usually a lambda
   /// @returns the auto updater
-  AutoUpdater(std::function<void(T)> iupdater, std::function<T()> igetter)
+  AutoUpdater(std::function<void(Input)> iupdater, std::function<Input()> igetter)
       : updater(std::move(iupdater)), getter(igetter) {}
 
   /// @brief destroys the auto updater, stopping running updates in the process
@@ -38,8 +38,8 @@ public:
   }
 
 private:
-  std::function<void(T)> updater = nullptr;
-  std::function<T()> getter = nullptr;
+  std::function<void(Input)> updater = nullptr;
+  std::function<Input()> getter = nullptr;
 
   pros::Task *update_task = nullptr;
 };

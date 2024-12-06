@@ -7,7 +7,7 @@
 
 #include <memory>
 
-class HoloChassisPID : public MTPController {
+class HoloChassisPID : public MtpController {
 public:
   enum class pid_dimension_e {
     x,

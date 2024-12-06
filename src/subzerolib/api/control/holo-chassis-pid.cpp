@@ -18,8 +18,8 @@ void HoloChassisPID::approach_pose(pose_s target, double linv) {
 }
 
 void HoloChassisPID::move_to_pose(pose_s goal) {
-  std::shared_ptr<ExitCondition<double>> cond{
-      new ExitCondition<double>{{0, 0.02}, 200}
+  std::shared_ptr<Condition<double>> cond{
+      new Condition<double>{{0, 0.02}, 200}
   };
   AutoUpdater<double> updater(
       [cond](double val) { cond->update(val); },

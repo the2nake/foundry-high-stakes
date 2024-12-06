@@ -8,7 +8,7 @@
 /// implementations of apporach_pose need not work as a move to pose function on
 /// their own; they simply must approach correctly given that the pose is
 /// roughly aligned with the direction of the drive
-class MTPController {
+class MtpController {
 public:
   /// @brief move the chassis in the direction of a target pose
   ///
