@@ -9,12 +9,12 @@ double mod(double x, double modulo) {
     return x;
   }
 
-  if (x < 0) {
-    return mod(x + modulo, modulo);
+  while (x < 0) {
+    x += modulo;
   }
 
-  if (x >= modulo) {
-    return mod(x - modulo, modulo);
+  while (x >= modulo) {
+    x -= modulo;
   }
 
   return x;
