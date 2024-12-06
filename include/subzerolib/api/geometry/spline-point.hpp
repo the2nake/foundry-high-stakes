@@ -1,6 +1,7 @@
 #pragma once
 
 #include "subzerolib/api/geometry/point.hpp"
+#include "subzerolib/api/util/math.hpp"
 
 #include <cmath>
 
@@ -27,3 +28,7 @@ struct spline_point_s : public point_s {
   // positive curvature is acw
   double curvature() const;
 };
+
+template <>
+spline_point_s
+lerp<spline_point_s, double>(spline_point_s a, spline_point_s b, double t);
