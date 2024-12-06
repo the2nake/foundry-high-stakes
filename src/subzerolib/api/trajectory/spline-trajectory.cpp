@@ -138,7 +138,13 @@ void SplineTrajectory::apply_constraints() {
                 [this](spline_point_s p) {
                   trajectory_point_s traj_point{p};
                   // calculate h before generating vh
-                  traj_point.h = mod(90 - in_deg(atan2(p.vy, p.vx)), 360.0);
+                  traj_point.h = 90 - in_deg(atan2(p.vy, p.vx));
+                  if (!vec.empty()) {
+                    traj_point.h =
+                        vec.back().h + shorter_turn(vec.back().h, traj_point.h);
+                  } else {
+                    traj_point.h = mod(traj_point.h, 360.0);
+                  }
                   this->vec.emplace_back(traj_point);
                 });
 
