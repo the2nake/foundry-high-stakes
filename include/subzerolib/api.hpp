@@ -7,7 +7,7 @@
 #include "subzerolib/api/chassis/star-chassis.hpp"
 #include "subzerolib/api/chassis/tank-chassis.hpp"
 #include "subzerolib/api/chassis/x-chassis.hpp"
-#include "subzerolib/api/control/chassis-controller.hpp"
+#include "subzerolib/api/control/mtp-controller.hpp"
 #include "subzerolib/api/control/holo-chassis-pid.hpp"
 #include "subzerolib/api/control/pid.hpp"
 #include "subzerolib/api/control/piston.hpp"

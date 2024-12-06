@@ -9,7 +9,7 @@
 // TODO: refactor pure pursuit code it's ugly as fuck
 
 PurePursuitController::PurePursuitController(
-    std::shared_ptr<ChassisController> ichassis,
+    std::shared_ptr<MTPController> ichassis,
     std::shared_ptr<Odometry> iodom,
     std::shared_ptr<ExitCondition<double>> ipos_exit_condition)
     : controller(std::move(ichassis)), odom(std::move(iodom)),

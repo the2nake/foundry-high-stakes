@@ -1,13 +1,13 @@
 #pragma once
 
 #include "subzerolib/api/chassis/chassis.hpp"
-#include "subzerolib/api/control/chassis-controller.hpp"
+#include "subzerolib/api/control/mtp-controller.hpp"
 #include "subzerolib/api/control/pid.hpp"
 #include "subzerolib/api/odometry/odometry.hpp"
 
 #include <memory>
 
-class HoloChassisPID : public ChassisController {
+class HoloChassisPID : public MTPController {
 public:
   enum class pid_dimension_e {
     x,

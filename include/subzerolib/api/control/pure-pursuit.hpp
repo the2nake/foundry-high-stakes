@@ -1,6 +1,6 @@
 #pragma once
 
-#include "subzerolib/api/control/chassis-controller.hpp"
+#include "subzerolib/api/control/mtp-controller.hpp"
 #include "subzerolib/api/geometry/pose.hpp"
 #include "subzerolib/api/logic/exit-condition.hpp"
 #include "subzerolib/api/odometry/odometry.hpp"
@@ -20,7 +20,7 @@ public:
   /// position
   /// @returns the created controller object
   PurePursuitController(
-      std::shared_ptr<ChassisController> icontroller,
+      std::shared_ptr<MTPController> icontroller,
       std::shared_ptr<Odometry> iodom,
       std::shared_ptr<ExitCondition<double>> ipos_exit_condition);
 
@@ -51,7 +51,7 @@ private:
   std::vector<pose_s> waypoints;
   int resolution = 1;
 
-  std::shared_ptr<ChassisController> controller;
+  std::shared_ptr<MTPController> controller;
   std::shared_ptr<Odometry> odom;
   std::shared_ptr<ExitCondition<double>> pos_exit_condition;
 
