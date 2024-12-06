@@ -20,7 +20,8 @@ void TankChassis::move(double x, double y, double r) {
   // do not clamp velocities, keep original ratios
   insert_or_modify(volts, TankChassis::motor_pos_e::left, {y, r});
   insert_or_modify(volts, TankChassis::motor_pos_e::right, {y, -r});
-  // TODO: uncomment balance_mapped_vels(volts, 1.0, rot_pref);
+  // TODO: test this
+  // ! balance_mapped_vels(volts, 1.0, rot_pref);
   move_with_map();
 }
 

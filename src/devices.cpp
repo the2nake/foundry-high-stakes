@@ -3,11 +3,11 @@
 #include "ports.h"
 // #include "pros/distance.hpp"
 #include "subzerolib/api/chassis/tank-chassis.hpp"
-#include "subzerolib/api/control/piston.hpp"
-// #include "subzerolib/api/odometry/imu-odometry.hpp"
-#include "subzerolib/api/odometry/kf-odometry.hpp"
-// #include "subzerolib/api/sensors/abstract-mean-gyro.hpp"
 #include "subzerolib/api/control/pid.hpp"
+#include "subzerolib/api/control/piston.hpp"
+#include "subzerolib/api/odometry/imu-odometry.hpp"
+// #include "subzerolib/api/odometry/kf-odometry.hpp"
+#include "subzerolib/api/sensors/abstract-mean-gyro.hpp"
 #include "subzerolib/api/util/logging.hpp"
 
 #include <memory>
@@ -48,14 +48,12 @@ Piston clamp({std::move(piston_clamp)});
 Piston flipper({std::move(piston_flipper)});
 Piston intake_hover({std::move(piston_hover)});
 
-std::shared_ptr<AbstractGyro> imu{
+std::shared_ptr<AbstractGyro> imu_1{
     new AbstractImuGyro(PORT_IMU, (1 * 360.0) / (1 * 360.0 + 0))};
-
+std::shared_ptr<AbstractGyro> imu{new AbstractMeanGyro({imu_1})};
 /*
 // std::shared_ptr<AbstractGyro> imu_2{
 //     new AbstractImuGyro(IMU2, (19 * 360.0) / (18 * 360.0 + 260))};
-std::shared_ptr<AbstractGyro> mean_imu{
-    new AbstractMeanGyro({imu_1})}; // TODO: reconf for 2 imus
     */
 std::shared_ptr<AbstractEncoder> enc_x{new AbstractRotationEncoder(PORT_X_ENC)};
 std::shared_ptr<AbstractEncoder> enc_y{new AbstractRotationEncoder(PORT_Y_ENC)};
@@ -90,7 +88,7 @@ void configure_chassis() {
   chassis = TankChassis::Builder()
                 .with_motor(TankChassis::motor_pos_e::left, std::move(mtr_l))
                 .with_motor(TankChassis::motor_pos_e::right, std::move(mtr_r))
-                .with_geometry(0.248) // TODO: FIXEME
+                .with_geometry(0.248)
                 .with_rot_pref(0.3)
                 .with_vel(1.76)
                 .build();
@@ -167,7 +165,6 @@ void configure_odometry() {
   };
 
   KFOdometry::Builder builder(8, 0, 8);
-  // TODO: FIXME
   builder.with_gyro(mean_imu)
       .with_x_enc(enc_x, {-0.045, 0.160 / 360.0})
       .with_y_enc(enc_y, {0.09, 0.160 / 360.0});
