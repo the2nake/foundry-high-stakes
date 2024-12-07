@@ -203,8 +203,8 @@ void autonomous() {
   pros::Task *motion = nullptr;
 
   flipper.set_state(true);
-  Ramsete ctrl{0.02,
-               0.9,
+  Ramsete ctrl{2.0,
+               0.7,
                odom,
                chassis,
                std::unique_ptr<Condition<double>>{
@@ -213,9 +213,9 @@ void autonomous() {
   odom->set_position(0.0, 0.0);
   odom->set_heading(0.0);
 
-  std::shared_ptr<TankModel> model{new TankModel(1.7, 5.0, 3.0, 0.248)};
+  std::shared_ptr<TankModel> model{new TankModel(1.7, 5.0, 3.0, 0.248, 0.3)};
   std::shared_ptr<LinearMotionProfile> fast_profile{
-      new TrapezoidalMotionProfile(1.7, 5.0, 3.0)};
+      new TrapezoidalMotionProfile(1.7, 5.0, 2.0)};
   std::shared_ptr<LinearMotionProfile> slow_profile{
       new TrapezoidalMotionProfile(1.0, 3.0, 2.0)};
 
@@ -227,7 +227,7 @@ void autonomous() {
               {0.0, 0.5},
               {-0.5, 0.5}
               ),
-          slow_profile,
+          fast_profile,
           model
   }
           .get_profile(),
