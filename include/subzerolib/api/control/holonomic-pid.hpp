@@ -25,7 +25,7 @@ public:
   void approach_pose(pose_s target, double linv = std::nan("")) override;
 
   /// @brief brake the chassis
-  void brake() override;
+  void stop() override;
 
   bool is_settled() override { return this->settled.load(); }
 

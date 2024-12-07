@@ -23,7 +23,7 @@ void HolonomicPID::approach_pose(pose_s target, double linv) {
   chassis->move(vel.x, vel.y, r_pid->get_output());
 }
 
-void HolonomicPID::brake() {
+void HolonomicPID::stop() {
   this->chassis->move(0, 0, 0);
   this->pos_exit->reset();
   this->settled = true;

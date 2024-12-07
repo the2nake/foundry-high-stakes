@@ -12,7 +12,7 @@ void MtpController::move_to_pose(pose_s target) {
     approach_pose(target);
     pros::Task::delay_until(ptr, 10);
   }
-  brake();
+  stop();
   subzero::log("[i]: mtp complete: %.2f, %.2f @ %.0f in %d ms",
                target.x,
                target.y,

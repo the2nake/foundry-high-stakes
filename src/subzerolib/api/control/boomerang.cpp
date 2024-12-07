@@ -12,31 +12,27 @@ Boomerang::Boomerang(std::shared_ptr<TankChassis> ictrl,
 
 void Boomerang::approach_pose(pose_s target, double linv) {
   auto pose = odom->get_pose();
-  this->pos_exit->update(pose.dist(target));
+  auto dist = pose.dist(target);
+  this->pos_exit->update(dist);
   this->settled = this->pos_exit->is_met();
 
-  double h_cartesian = in_rad(90 - target.heading());
-  point_s carrot = point_s{target} -
-                   this->lead * point_s{cos(h_cartesian), sin(h_cartesian)};
+  double target_rad = in_rad(90 - target.heading());
+  point_s carrot =
+      point_s{target} -
+      this->lead * dist * point_s{cos(target_rad), sin(target_rad)};
 
-  auto e_x = carrot.x - pose.x;
-  auto e_y = carrot.y - pose.y;
-  double e_theta = shorter_turn(pose.heading(), pose.heading_to(carrot));
-  double e_rot =
-      std::min(shorter_turn(pose.heading(), pose.heading_to(carrot) + 180),
-               e_theta,
-               [](const double &a, const double &b) {
-                 return std::abs(a) < std::abs(b);
-               });
+  double h_to_carrot = pose.heading_to(carrot);
+  double e_theta = shorter_turn(pose.heading(), h_to_carrot);
+  double e_rot = aligned_turn(pose.heading(), h_to_carrot);
 
   chassis->move_vels(chassis->get_wheel_vels(
       0,
-      cos(in_rad(e_theta)) * d_pid->update(std::hypot(e_x, e_y), linv),
+      cos(in_rad(e_theta)) * d_pid->update(pose.dist(carrot), linv),
       r_pid->update(e_rot)));
 }
 
-void Boomerang::brake() {
-  this->chassis->move(0, 0, 0);
+void Boomerang::stop() {
+  this->chassis->move_vels({0, 0});
   this->pos_exit->reset();
   this->settled = true;
 }

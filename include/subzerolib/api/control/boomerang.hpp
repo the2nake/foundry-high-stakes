@@ -7,6 +7,7 @@
 class Boomerang : public MtpController {
 public:
   /// @param ichassis a TankChassis with velocity PID tuned
+  /// @param lead a value between 0 and 1
   Boomerang(std::shared_ptr<TankChassis> ichassis,
             std::shared_ptr<Odometry> iodom,
             std::shared_ptr<Condition<double>> ipos_exit,
@@ -21,7 +22,7 @@ public:
   void approach_pose(pose_s target, double linv = std::nan("")) override;
 
   /// @brief brake the chassis
-  void brake() override;
+  void stop() override;
 
   bool is_settled() override { return this->settled.load(); }
 

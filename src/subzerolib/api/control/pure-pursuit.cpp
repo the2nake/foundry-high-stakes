@@ -71,7 +71,7 @@ void PurePursuit::follow(const std::vector<pose_s> &waypoints,
     pros::Task::delay_until(prev_ptr, 10);
   }
 
-  this->ctrl->brake();
+  this->ctrl->stop();
 
   this->mutex.take(5);
   this->settled = true;

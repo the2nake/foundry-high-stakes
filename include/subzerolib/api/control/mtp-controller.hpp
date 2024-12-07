@@ -19,7 +19,7 @@ public:
   virtual void move_to_pose(pose_s target);
 
   /// @brief brake the chassis
-  virtual void brake() = 0;
+  virtual void stop() = 0;
 
   /// @brief check if the controller is settled
   virtual bool is_settled() = 0;

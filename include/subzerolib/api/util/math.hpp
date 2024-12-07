@@ -50,6 +50,21 @@ auto shorter_turn(T h0, T hf, T circle_size = 360.0) -> decltype(hf - h0) {
   }
 }
 
+/// @brief finds the shortest turn to make h0 parallel to hf
+/// @tparam T the type of the values
+/// @param h0 initial angle
+/// @param hf final angle
+/// @param circle_size number of units in a circle. degrees default (360.0)
+/// @returns the difference in angle, with (+) values clockwise.
+template <typename T>
+auto aligned_turn(T h0, T hf, T circle_size = 360.0) -> decltype(hf - h0) {
+  return std::min(shorter_turn(h0, hf + circle_size * 0.5, circle_size),
+                  shorter_turn(h0, hf, circle_size),
+                  [](const double &a, const double &b) {
+                    return std::abs(a) < std::abs(b);
+                  });
+}
+
 /// @brief clamps a value between two ranges
 /// @tparam T the type of the values
 /// @param val reference to the value
