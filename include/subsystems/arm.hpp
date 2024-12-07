@@ -58,8 +58,8 @@ private:
 
   std::optional<double> wrist_target = std::nullopt;
   std::optional<double> arm_target = std::nullopt;
-  PIDF arm_ctrl{200.00, 1200.0, 20.0, 0.0, true}; // output: mV
-  PIDF wrist_ctrl{30.00, 0.0, 1.0};               // TODO: tuning
+  PIDF arm_ctrl{200.00, 1200.0, 20.0, true}; // output: mV
+  PIDF wrist_ctrl{30.00, 0.0, 1.0};          // TODO: tuning
 
   double wrist_vel = 100.0;
 };

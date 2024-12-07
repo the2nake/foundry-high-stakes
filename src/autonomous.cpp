@@ -5,6 +5,8 @@
 #include "subzerolib/api/trajectory/motion-profile/trapezoidal-motion-profile.hpp"
 #include "subzerolib/api/trajectory/spline-trajectory.hpp"
 
+#include <fstream>
+
 /*
 void autonomous() {
   // controller->move_to_pose({0.3, 0.3, 270});
@@ -62,7 +64,7 @@ void turn_to_angle(void *target_ptr) {
   delete (double *)target_ptr;
 
   // ! TUNE
-  PIDF pid_ang{0.03, 0.02, 0.004, 0.0, true}; // old kd 0.004
+  PIDF pid_ang{0.03, 0.02, 0.004, true}; // old kd 0.004
   double error = std::nan("");
 
   std::uint32_t timestamp = pros::millis();
@@ -100,8 +102,8 @@ void move_distance(void *target_ptr) {
   double target = *(double *)target_ptr;
   delete (double *)target_ptr;
 
-  PIDF pid_lin{3.2, 0.25, 0.45, 0.0, true};
-  PIDF pid_ang{0.042, 0.02, 0.004, 0.0, true};
+  PIDF pid_lin{3.2, 0.25, 0.45, true};
+  PIDF pid_ang{0.042, 0.02, 0.004, true};
   double err_lin = std::nan("");
   double err_ang = std::nan("");
 
@@ -159,11 +161,80 @@ void auto2() {
   // turn_to_angle(120);
 }
 
+int time(std::function<void()> fn) {
+  auto start = pros::millis();
+  fn();
+  return pros::millis() - start;
+}
+
+std::shared_ptr<CatmullRomSpline>
+padded_spline(std::vector<point_s> points, point_s start_v, point_s end_v) {
+  auto spline = std::make_shared<CatmullRomSpline>(points);
+  spline->pad_velocity(start_v, end_v);
+  return spline;
+}
+
+void tuning() {
+  pros::delay(2000);
+  auto start_ts = pros::millis();
+  std::ofstream out("/usd/tuning.txt", std::ios::out);
+  uint32_t prev = pros::millis();
+  std::uint32_t *ptr = &prev;
+  while (pros::millis() - start_ts < 2000) {
+    chassis->move_vels({0.25, 0.25});
+    char msg[100];
+    snprintf(msg,
+             100,
+             "%d %f %f\n",
+             pros::millis(),
+             chassis->get_actual_vels()[0],
+             chassis->get_actual_vels()[1]);
+    if (out.is_open()) {
+      out << msg;
+    }
+    pros::Task::delay_until(ptr, 10);
+  }
+  out.close();
+}
+
 void autonomous() {
   auto start_ts = pros::millis();
 
   pros::Task *motion = nullptr;
+
   flipper.set_state(true);
+  Ramsete ctrl{0.02,
+               0.9,
+               odom,
+               chassis,
+               std::unique_ptr<Condition<double>>{
+                   new Condition<double>{{0.0, 0.03}, 100}}};
+
+  odom->set_position(0.0, 0.0);
+  odom->set_heading(0.0);
+
+  std::shared_ptr<TankModel> model{new TankModel(1.7, 5.0, 3.0, 0.248)};
+  std::shared_ptr<LinearMotionProfile> fast_profile{
+      new TrapezoidalMotionProfile(1.7, 5.0, 3.0)};
+  std::shared_ptr<LinearMotionProfile> slow_profile{
+      new TrapezoidalMotionProfile(1.0, 3.0, 2.0)};
+
+  // tuning();
+  ctrl.follow(
+      SplineTrajectory{
+          padded_spline(
+              {{0, 0}, {0.0, 0.3}, {-0.6, 0.5}},
+              {0.0, 0.5},
+              {-0.5, 0.5}
+              ),
+          slow_profile,
+          model
+  }
+          .get_profile(),
+      6000);
+  /**/
+
+  /*
   move_distance(1.01);
   pros::delay(100);
   turn_to_angle(315.0);

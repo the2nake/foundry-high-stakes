@@ -1,7 +1,9 @@
 #pragma once
 
 #include "subzerolib/api/geometry/point.hpp"
+#include "subzerolib/api/geometry/segment.hpp"
 #include <cmath>
+#include <vector>
 
 const double K_PI = 3.141592654;
 const double K_EPSILON = 0.00001; // range at which things are the same
@@ -89,4 +91,87 @@ template <typename T> void clamp_distance(T max_dist, T &x, T &y) {
 template <typename T> point_s rotate_acw(T x, T y, T deg) {
   double rad = in_rad(-deg);
   return {x * cos(rad) + y * sin(rad), y * cos(rad) - x * sin(rad)};
+}
+
+/// @brief find the closest point on a line segment to a point
+point_s closest_point_on_segment(segment_s segment, point_s &to_point);
+
+template <typename Point>
+Point closest_point_on_segment(Point start, Point end, point_s &to_point) {
+  static_assert(std::is_base_of<point_s, Point>::value,
+                "Point must be derived from point_s");
+
+  point_s relative_point = to_point - start;
+  point_s relative_end = end - start;
+  auto proj = relative_point.proj_onto(relative_end);
+
+  // clamp the projection
+  clamp_val(proj.x, 0.0, relative_end.x);
+  clamp_val(proj.y, 0.0, relative_end.y);
+
+  auto t = start.dist(proj) / start.dist(end);
+
+  return lerp(start, end, t);
+}
+
+/// @brief find the closest point on a linear spline to a point
+///
+/// this function uses an optional heuristic to speed up calculation, when
+/// setting optimal to false. this may cause issues in paths with relatively
+/// large distances between points
+///
+/// @param path a vector containing ordered points forming the path
+/// @param to_point the point to compare against
+/// @param optimal whether to use an optimal algorithm or a fast algorithm
+/// @returns the closest point on the path to the point
+template <typename Point>
+Point closest_point_on_path(const std::vector<Point> &path,
+                            point_s to_point,
+                            bool optimal = true) {
+  static_assert(std::is_base_of<point_s, Point>::value,
+                "Point must be derived from point_s");
+  if (path.size() < 2) {
+    // invalid path
+    return {0.0, 0.0};
+  }
+
+  if (optimal) {
+    Point min_point;
+    double min = std::numeric_limits<double>::max();
+    for (int i = 0; i < path.size() - 1; ++i) {
+      Point point =
+          closest_point_on_segment<Point>(path[i], path[i + 1], to_point);
+      double sqdistance = to_point.sqdist(point);
+      if (sqdistance < min) {
+        min = sqdistance;
+        min_point = point;
+      }
+    }
+    return min_point;
+  } else {
+    int min_index = -1;
+    auto min = std::numeric_limits<double>::max();
+    for (const Point &path_point : path) {
+      auto dx = (to_point.x - path_point.x);
+      auto dy = (to_point.y - path_point.y);
+      if (dx * dx + dy * dy < min) {
+        min_index = &path_point - &path[0];
+      }
+    }
+
+    if (min_index == 0) {
+      return closest_point_on_segment<Point>(path[0], path[1], to_point);
+    } else if (min_index == path.size() - 1) {
+      return closest_point_on_segment<Point>(
+          path[path.size() - 2], path[path.size() - 1], to_point);
+    } else {
+      return std::min(closest_point_on_segment<Point>(
+                          path[min_index], path[min_index + 1], to_point),
+                      closest_point_on_segment<Point>(
+                          path[min_index - 1], path[min_index], to_point),
+                      [&to_point](Point a, Point b) -> bool {
+                        return to_point.dist(a) < to_point.dist(b);
+                      });
+    }
+  }
 }

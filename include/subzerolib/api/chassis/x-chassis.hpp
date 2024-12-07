@@ -15,6 +15,11 @@ public:
   /// @param r rotational component
   void move(double x, double y, double r) override;
 
+  /// @brief ignored
+  void move_vels(std::vector<double> vels) override {}
+
+  std::vector<double> get_actual_vels() override { return {}; }
+
   /// @brief specify a preference for combining linear and angular components
   /// @param rot_pref a value in the range [0.0, 1.0]
   void set_rot_pref(double irot_pref) override {

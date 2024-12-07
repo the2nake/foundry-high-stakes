@@ -3,6 +3,7 @@
 #include "pros/rtos.hpp"
 #include <atomic>
 #include <cmath>
+#include <functional>
 
 class PIDF {
 public:
@@ -14,13 +15,14 @@ public:
   /// @param ikp proportional gain
   /// @param iki integral gain
   /// @param ikd derivative gain
-  /// @param iff feedfoward constant
+  /// @param iff feedfoward function (takes and returns double)
   /// @returns a PIDF object
-  PIDF(double ikp,
-       double iki,
-       double ikd,
-       double iff = 0,
-       bool cut_integral = false)
+  PIDF(
+      double ikp,
+      double iki,
+      double ikd,
+      bool cut_integral = false,
+      std::function<double(double)> iff = [](double ignore) { return 0.0; })
       : kp(ikp), ki(iki), kd(ikd), ff(iff), cut(cut_integral) {}
 
   PIDF(PIDF &&other)
@@ -32,16 +34,6 @@ public:
   /// affects output, total_error, prev_error, and last_update
   void reset();
 
-  /// @brief changes the feedforward constant
-  /// @param iff the new feedforward value
-  void set_ff(double iff) {
-    if (!std::isnan(iff)) {
-      ff = iff;
-    } else {
-      ff = 0.0;
-    }
-  }
-
   /// @brief update the controller with an error input
   ///
   /// update effects are time-sensitive, however behaviour is mostly uniform
@@ -49,8 +41,10 @@ public:
   ///
   /// @param error the error to the target reading. usually calculated as
   /// (target - current)
+  /// @param ff_input input to the feedfoward, oftentimes the target trying to
+  /// be reached. nan disables feedforward.
   /// @returns the output of the controller
-  double update(double error);
+  double update(double error, double ff_input = std::nan(""));
 
   /// @brief get the output of the controller
   /// @returns the output value
@@ -62,7 +56,7 @@ private:
   const double ki;
   const double kd;
   const bool cut;
-  double ff = 0.0;
+  std::function<double(double)> ff;
 
   std::atomic<double> prev_err = std::nan("");
   std::atomic<double> total_err = 0.0;

@@ -9,7 +9,7 @@ void PIDF::reset() {
   output = 0.0;
 }
 
-double PIDF::update(double error) {
+double PIDF::update(double error, double ff_input) {
   uint32_t now = pros::millis();
   double dt = (now - last_update) / 1000.0; // in seconds
   if (std::isnan(error) || std::isinf(error)) {
@@ -29,7 +29,7 @@ double PIDF::update(double error) {
   if ((!std::isnan(prev_err)) && (std::abs(dt) > 0.001)) {
     d = kd * (error - prev_err) / dt;
   }
-  output = ff + p + i + d;
+  output = (!std::isnan(ff_input) ? ff(ff_input) : 0) + p + i + d;
   prev_err = error;
   last_update = now;
   return output;

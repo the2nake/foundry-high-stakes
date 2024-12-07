@@ -30,10 +30,6 @@ def scatter_list(ax, parsed_list, style="o"):
         ys.append(item[1])
     ax.scatter(xs, ys, marker=style)
 
-
-lines = file.readlines()
-
-
 def gen_parsed(lines, str):
     parsed = []
     for line in lines:
@@ -51,6 +47,8 @@ def plot(lines, str, ax, style="-"):
 def scatter(lines, str, ax, style="-"):
     return scatter_list(ax, gen_parsed(lines, str), style)
 
+
+lines = file.readlines()
 
 fig, ax = plt.subplots()
 

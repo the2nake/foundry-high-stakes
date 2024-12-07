@@ -26,6 +26,7 @@ public:
 
   trajectory_point_s get_at_time(double t) override;
   trajectory_point_s get_at_distance(double s) override;
+  std::vector<trajectory_point_s> get_profile() override;
 
   void print() {
     for (auto &p : vec) {

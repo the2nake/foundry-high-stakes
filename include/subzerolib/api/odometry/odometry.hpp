@@ -17,8 +17,8 @@ public:
   }
 
   struct encoder_conf_s {
-    encoder_conf_s(double ioffset, double itravel)
-        : offset(ioffset), travel_per_deg(itravel) {}
+    encoder_conf_s(double ioffset, double itravel_per_deg)
+        : offset(ioffset), travel_per_deg(itravel_per_deg) {}
     double offset; // right is +x, up is +y
     double travel_per_deg;
   };

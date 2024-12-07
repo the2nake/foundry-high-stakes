@@ -49,7 +49,7 @@ Piston flipper({std::move(piston_flipper)});
 Piston intake_hover({std::move(piston_hover)});
 
 std::shared_ptr<AbstractGyro> imu_1{
-    new AbstractImuGyro(PORT_IMU, (1 * 360.0) / (1 * 360.0 + 0))};
+    new AbstractImuGyro(PORT_IMU, (6 * 360.0 + 26.05) / (6 * 360.0 + 0))};
 std::shared_ptr<AbstractGyro> imu{new AbstractMeanGyro({imu_1})};
 /*
 // std::shared_ptr<AbstractGyro> imu_2{
@@ -85,13 +85,30 @@ void configure_motors() {
 }
 
 void configure_chassis() {
-  chassis = TankChassis::Builder()
-                .with_motor(TankChassis::motor_pos_e::left, std::move(mtr_l))
-                .with_motor(TankChassis::motor_pos_e::right, std::move(mtr_r))
-                .with_geometry(0.248)
-                .with_rot_pref(0.3)
-                .with_vel(1.76)
-                .build();
+  chassis =
+      TankChassis::Builder()
+          .with_motor(TankChassis::motor_pos_e::left, std::move(mtr_l))
+          .with_motor(TankChassis::motor_pos_e::right, std::move(mtr_r))
+          .with_pid(std::make_unique<PIDF>(0.0015,
+                                           0.0,
+                                           0.0,
+                                           true,
+                                           [](double rpm) {
+                                             return rpm / 650.0 +
+                                                    0.12 * std::abs(rpm) / rpm;
+                                           }),
+                    std::make_unique<PIDF>(0.0014,
+                                           0.0,
+                                           0.0,
+                                           true,
+                                           [](double rpm) {
+                                             return rpm / 650.0 +
+                                                    0.05 * std::abs(rpm) / rpm;
+                                           }))
+          .with_geometry(0.165, 0.248)
+          .with_rot_pref(0.3)
+          .with_vel(1.76)
+          .build();
 }
 
 void configure_odometry() {
@@ -179,12 +196,13 @@ void configure_odometry() {
   odom->auto_update();
   */
 
+  /* really bad, idk why */
   odom = ImuOdometry::Builder()
              .with_gyro(imu)
              .with_x_enc(enc_x, {0, 0.16 / 360.0})
-             .with_y_enc(enc_y, {-+0.0508, 0.16 / 360.0})
+             .with_y_enc(enc_y, {-0.0508, 0.16 / 360.0})
              .build();
-  odom->auto_update();
+  odom->auto_update(10);
 }
 
 void initialise_devices() {

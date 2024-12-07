@@ -48,6 +48,10 @@ The codebase for a certain team of 3818, currently consisting of 4 members. The 
 
 ## Dependencies
 
+### Tests
+
+`ccache g++`
+
 ### plot.py
 
 `ffmpeg`

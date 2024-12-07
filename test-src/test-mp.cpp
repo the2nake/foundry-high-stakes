@@ -35,6 +35,8 @@ public:
             max_vel,
             0.5 * K_SQRT_2 * max_vel};
   }
+  void move_vels(std::vector<double> vels) override {}
+  std::vector<double> get_actual_vels() override { return {}; }
   std::vector<double>
   get_wheel_vels(double vx, double vy, double v_ang) override {
     double angular_components[] = {corner_radius * v_ang,
@@ -176,20 +178,25 @@ void star_drive_test() {
   print_trajectory(points);
 }
 
+std::shared_ptr<CatmullRomSpline>
+padded_spline(std::vector<point_s> points, point_s start_v, point_s end_v) {
+  auto spline = std::make_shared<CatmullRomSpline>(points);
+  spline->pad_velocity(start_v, end_v);
+  return spline;
+}
+
 void tank_drive_test() {
-
-  std::vector<pose_s> ctrl = {
-      pose_s{  0.0,  0.0, 0.0},
-      pose_s{  0.5,  0.5, 0.0},
-      pose_s{ -0.5,  1.5, 0.0},
-      pose_s{-0.75, 0.75, 0.0}
-  };
-
-  std::shared_ptr<CatmullRomSpline> spline{new CatmullRomSpline{ctrl}};
-  spline->pad_velocity({0.5, 0.5}, {-0.25, 0.25});
+  std::shared_ptr<CatmullRomSpline> spline = padded_spline(
+      {
+          {   0,   0},
+          { 0.0, 0.3},
+          {-0.6, 0.5}
+  },
+      {0.0, 0.5},
+      {-0.5, 0.5});
 
   std::shared_ptr<TankModel> model{
-      new TankModel{1.76, 6.0, 3.0, 0.248}
+      new TankModel{1.0, 4.0, 3.0, 0.248}
   };
 
   std::shared_ptr<TrapezoidalMotionProfile> profile{

@@ -3,10 +3,10 @@
 #include <cmath>
 
 struct TankModel : public Model {
-  const double vel = 1.5;
-  const double accel = 6.0;
-  const double decel = 4.0;
-  const double track_width = 0.25;
+  const double vel;
+  const double accel;
+  const double decel;
+  const double track_width;
 
   const double drift = 0.0;
 

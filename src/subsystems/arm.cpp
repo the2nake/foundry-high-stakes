@@ -28,6 +28,8 @@ void Arm::toggle_wall_mode() {
   }
 }
 
+const double arm_high_pos = 245.0;
+
 // updates the targets and the state
 void Arm::update() {
   switch (this->state) {
@@ -73,24 +75,24 @@ void Arm::update() {
     this->wrist_target = 70.0;
 
     if (this->wrist->get_position() >= 67.0) {
-      this->arm_target = 242.5;
+      this->arm_target = arm_high_pos;
     }
     if (this->enc_arm->get_deg() > 160.0) {
       this->wrist_target = 210.0;
     }
 
     if (this->wrist->get_position() >= 190.0 &&
-        this->enc_arm->get_deg() >= 242.3) {
+        this->enc_arm->get_deg() >= arm_high_pos - 1.0) {
       this->state = state_e_t::ready_w;
       this->update();
     }
     break;
   case state_e_t::ready_w:
-    this->arm_target = 242.5;
+    this->arm_target = arm_high_pos;
     this->wrist_target = 210.0;
     break;
   case state_e_t::score_w:
-    this->arm_target = 242.5;
+    this->arm_target = arm_high_pos;
     this->wrist_target = 110.0;
     this->wrist_vel = 60.0;
 

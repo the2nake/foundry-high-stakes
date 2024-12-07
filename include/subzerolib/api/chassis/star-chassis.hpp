@@ -26,6 +26,9 @@ public:
   /// @param r rotational component
   void move(double x, double y, double r) override;
 
+  /// @brief ignored
+  void move_vels(std::vector<double> vels) override {}
+
   /// @brief specify a preference for combining linear and angular components
   /// @param rot_pref a value in the range [0.0, 1.0]
   void set_rot_pref(double irot_pref = 0.5) override;
@@ -33,6 +36,8 @@ public:
   /// @brief get the maximum velocity
   /// @returns the linear velocity
   double get_max_vel() override;
+
+  std::vector<double> get_actual_vels() override { return {}; }
 
   /// @brief generate wheel velocities for a given angular and linear velocity
   /// target
@@ -79,7 +84,7 @@ public:
     /// @param motor a unique pointer to the motor
     /// @returns a reference to the builder object
     Builder &with_motor(motor_pos_e position,
-                         std::unique_ptr<pros::Motor> motor);
+                        std::unique_ptr<pros::Motor> motor);
 
     /// @brief specify a motor for the chassis
     ///
@@ -90,7 +95,7 @@ public:
     /// @param motor a unique pointer to the motor
     /// @returns a reference to the builder object
     Builder &with_motor(motor_pos_e position,
-                         std::unique_ptr<pros::AbstractMotor> motor);
+                        std::unique_ptr<pros::AbstractMotor> motor);
 
     /// @brief specify star drive geometry
     /// @param iboost_radius the radius from the centre to the middle of the

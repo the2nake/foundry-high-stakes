@@ -2,7 +2,7 @@
 #include "devices.hpp"
 #include "ports.h"
 
-// #define DEBUG
+#define DEBUG
 
 namespace saturnine {
 bool running = true;
@@ -211,7 +211,6 @@ void deadzone(double &val, const double range) {
   }
 }
 
-// #define DEBUG
 
 void opcontrol() {
 #ifdef DEBUG
