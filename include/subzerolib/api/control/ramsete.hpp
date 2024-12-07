@@ -20,7 +20,7 @@ public:
   void follow(const std::vector<trajectory_point_s> &trajectory,
               uint timeout_ms = 5000);
 
-  bool is_settled() { return this->exit_condition->is_met(); }
+  bool is_settled() { return this->settled.load(); }
 
 private:
   const double b;
