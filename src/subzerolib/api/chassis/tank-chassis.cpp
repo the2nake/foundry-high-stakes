@@ -33,18 +33,9 @@ void TankChassis::move_with_map() {
 
 std::vector<double>
 TankChassis::get_wheel_vels(double vx, double vy, double ang) {
-  // net = vl - vr (m/s)
-  // net / (0.5 * track_width) = ang (1/s)
-  // ang = (vl - vr) / (0.5 * track_width)
-
-  // 0.5 * ang * track_width = vl - vr
-  // 2 * vy = vl + vr
-  //   vr = 2 * vy - vl
-  // 0.5 * ang * track_width + 2 * vy = 2 * vl
-  // 0.25 * ang * track_width + vy = vl
-
-  double vl = 0.25 * ang * track_width + vy;
-  double vr = 2 * vy - vl;
+  double diff = ang * track_width * 0.5;
+  double vl = vy + diff;
+  double vr = vy - diff;
 
   return {vl, vr};
 }
