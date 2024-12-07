@@ -21,7 +21,8 @@ public:
   /// @returns the created controller object
   PurePursuitController(std::shared_ptr<MtpController> icontroller,
                         std::shared_ptr<Odometry> iodom,
-                        std::shared_ptr<Condition<double>> ipos_exit);
+                        std::shared_ptr<Condition<double>> ipos_exit,
+                        int iresolution = 1);
 
   /// @brief follows the path described by the linear spline connecting the
   /// waypoints
@@ -30,10 +31,9 @@ public:
   /// @param lookahead range for pure-pursuit smoothening
   /// @param ms_timeout maximum controller run time
   /// @param resolution number of physics steps per iteration, >= 1
-  void follow(const std::vector<pose_s> &iwaypoints,
+  void follow(const std::vector<pose_s> &waypoints,
               double lookahead,
-              int ms_timeout = 5000,
-              int iresolution = 1);
+              int ms_timeout = 5000);
 
   /// @brief follows the path described by the linear spline connecting the
   /// waypoints without blocking
@@ -42,10 +42,9 @@ public:
   /// @param lookahead range for pure-pursuit smoothening
   /// @param ms_timeout maximum controller run time
   /// @param resolution number of physics steps per iteration, >= 1
-  void follow_async(const std::vector<pose_s> &iwaypoints,
+  void follow_async(const std::vector<pose_s> &waypoints,
                     double lookahead,
-                    int ms_timeout = 5000,
-                    int iresolution = 1);
+                    int ms_timeout = 5000);
 
   /// @brief stop the controller
   ///
@@ -57,8 +56,9 @@ public:
   bool is_settled() { return settled.load(); }
 
 private:
-  void select_carrot(pose_s pose, double lookahead, pose_s &carrot);
-  std::vector<pose_s> waypoints;
+  void select_carrot(std::vector<pose_s>::const_iterator current,
+                     double lookahead,
+                     pose_s &carrot);
   int resolution = 1;
 
   std::shared_ptr<MtpController> controller;
