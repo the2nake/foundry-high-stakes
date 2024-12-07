@@ -89,22 +89,25 @@ void configure_chassis() {
       TankChassis::Builder()
           .with_motor(TankChassis::motor_pos_e::left, std::move(mtr_l))
           .with_motor(TankChassis::motor_pos_e::right, std::move(mtr_r))
-          .with_pid(std::make_unique<PIDF>(0.0015,
-                                           0.0,
-                                           0.0,
-                                           true,
-                                           [](double rpm) {
-                                             return rpm / 650.0 +
-                                                    0.12 * std::abs(rpm) / rpm;
-                                           }),
-                    std::make_unique<PIDF>(0.0014,
-                                           0.0,
-                                           0.0,
-                                           true,
-                                           [](double rpm) {
-                                             return rpm / 650.0 +
-                                                    0.05 * std::abs(rpm) / rpm;
-                                           }))
+          .with_pid(
+              std::make_unique<PIDF>(
+                  0.0015,
+                  0.0,
+                  0.0,
+                  true,
+                  [](double rpm) {
+                    return rpm / 650.0 +
+                           (rpm > K_EPSILON ? 0.12 * std::abs(rpm) / rpm : 0);
+                  }),
+              std::make_unique<PIDF>(
+                  0.0014,
+                  0.0,
+                  0.0,
+                  true,
+                  [](double rpm) {
+                    return rpm / 650.0 +
+                           (rpm > K_EPSILON ? 0.05 * std::abs(rpm) / rpm : 0);
+                  }))
           .with_geometry(0.165, 0.248)
           .with_rot_pref(0.3)
           .with_vel(1.76)

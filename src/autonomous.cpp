@@ -203,7 +203,7 @@ void autonomous() {
   pros::Task *motion = nullptr;
 
   flipper.set_state(true);
-  Ramsete ctrl{2.0,
+  Ramsete ctrl{2.1,
                0.7,
                odom,
                chassis,
