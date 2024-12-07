@@ -1,7 +1,6 @@
 #include "subzerolib/api/control/pure-pursuit.hpp"
 #include "subzerolib/api/geometry/circle.hpp"
 #include "subzerolib/api/geometry/pose.hpp"
-#include "subzerolib/api/util/auto-updater.hpp"
 #include "subzerolib/api/util/logging.hpp"
 
 #include <cassert>
