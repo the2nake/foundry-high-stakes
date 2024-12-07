@@ -12,6 +12,10 @@ Ramsete::Ramsete(double i_b,
 
 void Ramsete::follow(const std::vector<trajectory_point_s> &trajectory,
                      uint timeout_ms) {
+  if (!this->is_settled()) {
+    subzero::error("[e]: ramsete: currently following another trajectory");
+    return;
+  }
   this->exit_condition->reset();
 
   auto start = pros::millis();

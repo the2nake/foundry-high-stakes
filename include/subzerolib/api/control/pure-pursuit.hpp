@@ -19,10 +19,9 @@ public:
   /// @param ipos_exit_condition a shared pointer to an exit condition for
   /// position
   /// @returns the created controller object
-  PurePursuitController(
-      std::shared_ptr<MtpController> icontroller,
-      std::shared_ptr<Odometry> iodom,
-      std::shared_ptr<Condition<double>> ipos_exit_condition);
+  PurePursuitController(std::shared_ptr<MtpController> icontroller,
+                        std::shared_ptr<Odometry> iodom,
+                        std::shared_ptr<Condition<double>> ipos_exit);
 
   /// @brief follows the path described by the linear spline connecting the
   /// waypoints
@@ -31,11 +30,22 @@ public:
   /// @param lookahead range for pure-pursuit smoothening
   /// @param ms_timeout maximum controller run time
   /// @param resolution number of physics steps per iteration, >= 1
-  void follow(std::vector<pose_s> iwaypoints,
+  void follow(const std::vector<pose_s> &iwaypoints,
               double lookahead,
               int ms_timeout = 5000,
               int iresolution = 1);
-  // TODO: PurePursuitController::follow_async
+
+  /// @brief follows the path described by the linear spline connecting the
+  /// waypoints without blocking
+  ///
+  /// @param waypoints a vector of waypoints
+  /// @param lookahead range for pure-pursuit smoothening
+  /// @param ms_timeout maximum controller run time
+  /// @param resolution number of physics steps per iteration, >= 1
+  void follow_async(const std::vector<pose_s> &iwaypoints,
+                    double lookahead,
+                    int ms_timeout = 5000,
+                    int iresolution = 1);
 
   /// @brief stop the controller
   ///
@@ -44,7 +54,7 @@ public:
 
   /// @brief checks if the motion is complete
   /// @returns if the motion has finished
-  bool is_complete() { return motion_complete.load(); }
+  bool is_settled() { return settled.load(); }
 
 private:
   void select_carrot(pose_s pose, double lookahead, pose_s &carrot);
@@ -53,9 +63,8 @@ private:
 
   std::shared_ptr<MtpController> controller;
   std::shared_ptr<Odometry> odom;
-  std::shared_ptr<Condition<double>> pos_exit_condition;
+  std::shared_ptr<Condition<double>> pos_exit;
 
-  std::atomic<bool> motion_complete = true;
+  std::atomic<bool> settled = true;
   pros::Mutex mutex;
-  std::unique_ptr<AutoUpdater<double>> pos_exit_condition_updater;
 };
