@@ -25,6 +25,8 @@ struct point_s {
   /// @brief vector projection
   point_s proj_onto(const point_s &b) const;
 
+  double heading_to(const point_s &b) const;
+
   std::string to_string() const;
 };
 

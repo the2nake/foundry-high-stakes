@@ -16,8 +16,11 @@ public:
   /// @param linv the intended movement velocity
   virtual void approach_pose(pose_s target, double linv = std::nan("")) = 0;
 
-  virtual void move_to_pose(pose_s target) = 0;
+  virtual void move_to_pose(pose_s target);
 
   /// @brief brake the chassis
   virtual void brake() = 0;
+
+  /// @brief check if the controller is settled
+  virtual bool is_settled() = 0;
 };

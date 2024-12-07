@@ -6,17 +6,17 @@
 #include <cassert>
 #include <memory>
 
-PurePursuitController::PurePursuitController(
-    std::shared_ptr<MtpController> ichassis,
-    std::shared_ptr<Odometry> iodom,
-    std::shared_ptr<Condition<double>> ipos_exit,
-    int iresolution)
-    : controller(std::move(ichassis)), odom(std::move(iodom)),
+PurePursuit::PurePursuit(std::shared_ptr<MtpController> ictrl,
+                         std::shared_ptr<Odometry> iodom,
+                         std::shared_ptr<Condition<double>> ipos_exit,
+                         int iresolution)
+    : ctrl(std::move(ictrl)), odom(std::move(iodom)),
       pos_exit(std::move(ipos_exit)), resolution(std::max(1, iresolution)) {}
 
-void PurePursuitController::follow(const std::vector<pose_s> &waypoints,
-                                   double lookahead,
-                                   int ms_timeout) {
+// TODO: swap to trajectory pose vector, and keep a variant with only poses
+void PurePursuit::follow(const std::vector<pose_s> &waypoints,
+                         double lookahead,
+                         int timeout_ms) {
   if (!this->is_settled()) {
     subzero::error("[e]: pure pursuit: currently following another path");
     return;
@@ -45,7 +45,7 @@ void PurePursuitController::follow(const std::vector<pose_s> &waypoints,
 
   pos_exit->reset();
 
-  for (uint32_t duration = 0; duration < ms_timeout;
+  for (uint32_t duration = 0; duration < timeout_ms;
        duration = pros::millis() - start) {
     pose = odom->get_pose();
 
@@ -65,13 +65,13 @@ void PurePursuitController::follow(const std::vector<pose_s> &waypoints,
 
     select_carrot(current, lookahead, carrot);
 
-    controller->approach_pose(carrot);
+    ctrl->approach_pose(carrot);
 
     prev_pose = pose;
     pros::Task::delay_until(prev_ptr, 10);
   }
 
-  this->controller->brake();
+  this->ctrl->brake();
 
   this->mutex.take(5);
   this->settled = true;
@@ -83,10 +83,9 @@ void PurePursuitController::follow(const std::vector<pose_s> &waypoints,
                goal.h);
 }
 
-void PurePursuitController::select_carrot(
-    std::vector<pose_s>::const_iterator current,
-    double lookahead,
-    pose_s &carrot) {
+void PurePursuit::select_carrot(std::vector<pose_s>::const_iterator current,
+                                double lookahead,
+                                pose_s &carrot) {
   segment_s seg{*current, *(current + 1)};
   circle_s seek{this->odom->get_pose(), lookahead};
   auto intersections = seek.intersections(seg);
@@ -99,7 +98,7 @@ void PurePursuitController::select_carrot(
   }
 }
 
-void PurePursuitController::stop() {
+void PurePursuit::stop() {
   this->mutex.take(5);
   this->settled = true;
   this->mutex.give();

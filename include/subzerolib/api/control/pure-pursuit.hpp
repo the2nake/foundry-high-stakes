@@ -4,14 +4,13 @@
 #include "subzerolib/api/geometry/pose.hpp"
 #include "subzerolib/api/logic/exit-condition.hpp"
 #include "subzerolib/api/odometry/odometry.hpp"
-#include "subzerolib/api/util/auto-updater.hpp"
 
 #include "pros/rtos.hpp"
 #include <atomic>
 #include <memory>
 #include <vector>
 
-class PurePursuitController {
+class PurePursuit {
 public:
   /// @brief creates a pure pursuit controller
   /// @param icontroller a shared pointer to a chassis controller
@@ -19,10 +18,10 @@ public:
   /// @param ipos_exit_condition a shared pointer to an exit condition for
   /// position
   /// @returns the created controller object
-  PurePursuitController(std::shared_ptr<MtpController> icontroller,
-                        std::shared_ptr<Odometry> iodom,
-                        std::shared_ptr<Condition<double>> ipos_exit,
-                        int iresolution = 1);
+  PurePursuit(std::shared_ptr<MtpController> ictrl,
+              std::shared_ptr<Odometry> iodom,
+              std::shared_ptr<Condition<double>> ipos_exit,
+              int iresolution = 1);
 
   /// @brief follows the path described by the linear spline connecting the
   /// waypoints
@@ -44,7 +43,7 @@ public:
   /// @param resolution number of physics steps per iteration, >= 1
   void follow_async(const std::vector<pose_s> &waypoints,
                     double lookahead,
-                    int ms_timeout = 5000);
+                    int timeout_ms = 5000);
 
   /// @brief stop the controller
   ///
@@ -61,7 +60,7 @@ private:
                      pose_s &carrot);
   int resolution = 1;
 
-  std::shared_ptr<MtpController> controller;
+  std::shared_ptr<MtpController> ctrl;
   std::shared_ptr<Odometry> odom;
   std::shared_ptr<Condition<double>> pos_exit;
 

@@ -30,5 +30,5 @@ private:
   std::shared_ptr<TankChassis> chassis;
   std::unique_ptr<Condition<double>> exit_condition;
 
-  std::atomic<bool> settled;
+  std::atomic<bool> settled = true;
 };

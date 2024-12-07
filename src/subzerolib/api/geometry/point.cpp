@@ -1,4 +1,5 @@
 #include "subzerolib/api/geometry/point.hpp"
+#include "subzerolib/api/util/math.hpp"
 
 std::string point_s::to_string() const {
   return "p(" + std::to_string(x) + ", " + std::to_string(y) + ")";
@@ -35,4 +36,8 @@ double point_s::dot(const point_s &b) const {
 
 point_s point_s::proj_onto(const point_s &b) const {
   return b * (this->dot(b) / b.dot(b));
+}
+
+double point_s::heading_to(const point_s &b) const {
+  return 90 - in_deg(std::atan2(b.y - this->y, b.x - this->x));
 }
