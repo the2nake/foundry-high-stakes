@@ -4,3 +4,5 @@ BinPackArguments: false
 BinPackParameters: false
 AlignArrayOfStructures: Right
 ColumnLimit: 80
+AllowShortLoopsOnASingleLine: true
+AllowShortBlocksOnASingleLine: true

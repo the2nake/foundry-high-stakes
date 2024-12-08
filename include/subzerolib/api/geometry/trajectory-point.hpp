@@ -1,6 +1,7 @@
 #pragma once
 
 #include "subzerolib/api/geometry/point.hpp"
+#include "subzerolib/api/geometry/pose.hpp"
 #include "subzerolib/api/geometry/spline-point.hpp"
 
 #include <string>
@@ -18,8 +19,11 @@ struct trajectory_point_s : public point_s {
         vh(i_vh) {}
 
   // constructs, but will be missing t, h, and vh
-  trajectory_point_s(spline_point_s &point)
+  trajectory_point_s(const spline_point_s &point)
       : s(point.s), point_s(point.x, point.y), vx(point.vx), vy(point.vy) {}
+
+  // will be missing velocities, t and s
+  trajectory_point_s(const pose_s &pose) : point_s(pose.x, pose.y), h(pose.h) {}
 
   double t = 0;
   double s = 0;

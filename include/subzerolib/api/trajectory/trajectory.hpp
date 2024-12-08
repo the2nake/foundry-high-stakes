@@ -11,7 +11,7 @@ public:
   virtual double get_length() = 0;
   virtual trajectory_point_s get_at_time(double t) = 0;
   virtual trajectory_point_s get_at_distance(double s) = 0;
-  virtual std::vector<trajectory_point_s> get_profile() = 0;
+  virtual std::vector<trajectory_point_s> get_trajectory() = 0;
 
 protected:
   Trajectory() {}

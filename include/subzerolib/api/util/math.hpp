@@ -18,6 +18,15 @@ template <typename T> bool rougheq(T a, T b) {
   return std::abs(a - b) < K_EPSILON;
 }
 
+template <typename T> int sgn(T x) {
+  if (x == 0) {
+    return 0;
+  } else if (x < 0) {
+    return -1;
+  }
+  return 1;
+}
+
 /// @brief converts from degrees to radians
 /// @param deg the value in degrees
 /// @returns a value in radians

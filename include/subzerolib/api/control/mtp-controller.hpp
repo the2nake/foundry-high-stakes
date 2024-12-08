@@ -16,7 +16,7 @@ public:
   /// @param linv the intended movement velocity
   virtual void approach_pose(pose_s target, double linv = std::nan("")) = 0;
 
-  virtual void move_to_pose(pose_s target);
+  virtual void move_to_pose(pose_s target, int timeout_ms = 6000);
 
   /// @brief brake the chassis
   virtual void stop() = 0;

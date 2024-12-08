@@ -38,7 +38,7 @@ trajectory_point_s SplineTrajectory::get_at_distance(double s) {
   return lerp(vec[next_i - 1], vec[next_i], f);
 }
 
-std::vector<trajectory_point_s> SplineTrajectory::get_profile() {
+std::vector<trajectory_point_s> SplineTrajectory::get_trajectory() {
   return this->vec;
 }
 

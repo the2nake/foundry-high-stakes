@@ -4,23 +4,18 @@
 #include "subzerolib/api/logic/exit-condition.hpp"
 #include "subzerolib/api/odometry/odometry.hpp"
 
-class Boomerang : public MtpController {
+class TankPID : public MtpController {
 public:
   /// @param ichassis a TankChassis with velocity PID tuned
   /// @param id_pid pid controller tuned for difference in metres, output in
   /// velocity (m/s)
   /// @param ir_pid pid controller tuned for difference in degrees, output in
   /// angular velocity (rad/s)
-  /// @param ilead a value between 0 and 1
-  /// @param iclose_thres the threshold where the controller will try to match
-  /// the angle
-  Boomerang(std::shared_ptr<TankChassis> ichassis,
-            std::shared_ptr<Odometry> iodom,
-            std::unique_ptr<Condition<double>> ipos_exit,
-            std::unique_ptr<PIDF> id_pid,
-            std::unique_ptr<PIDF> ir_pid,
-            double ilead,
-            double iclose_thres);
+  TankPID(std::shared_ptr<TankChassis> ichassis,
+          std::shared_ptr<Odometry> iodom,
+          std::unique_ptr<Condition<double>> ipos_exit,
+          std::unique_ptr<PIDF> id_pid,
+          std::unique_ptr<PIDF> ir_pid);
 
   /// @brief move the chassis in the direction of a target pose
   ///
@@ -41,9 +36,5 @@ private:
   std::unique_ptr<PIDF> d_pid;
   std::unique_ptr<PIDF> r_pid;
 
-  const double lead;
-  const double close_thres;
-
-  std::atomic<bool> close = false;
   std::atomic<bool> settled = true;
 };

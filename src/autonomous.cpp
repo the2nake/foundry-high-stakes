@@ -203,24 +203,53 @@ void autonomous() {
   pros::Task *motion = nullptr;
 
   flipper.set_state(true);
-  Ramsete ctrl{2.1,
-               0.7,
-               odom,
-               chassis,
-               std::unique_ptr<Condition<double>>{
-                   new Condition<double>{{0.0, 0.03}, 100}}};
+  Ramsete ramsete{2.1,
+                  0.7,
+                  odom,
+                  chassis,
+                  std::unique_ptr<Condition<double>>{
+                      new Condition<double>{{0.0, 0.03}, 100}}};
+
+  std::unique_ptr<Condition<double>> boom_cond{
+      new Condition<double>{{0.0, 0.05}, 50}
+  };
+  std::unique_ptr<PIDF> boom_d_pid = std::make_unique<PIDF>(2.6, 0.0, 0.33);
+  std::unique_ptr<PIDF> boom_r_pid = std::make_unique<PIDF>(0.33, 0.0, 0.040);
+  auto boom = std::make_shared<Boomerang>(chassis,
+                                          odom,
+                                          std::move(boom_cond),
+                                          std::move(boom_d_pid),
+                                          std::move(boom_r_pid),
+                                          0.3,
+                                          0.15);
+
+  std::unique_ptr<Condition<double>> pid_cond{
+      new Condition<double>{{0.0, 0.03}, 50}
+  };
+  std::unique_ptr<PIDF> tank_d_pid = std::make_unique<PIDF>(
+      0.1, 0.0, 0.0, false, [](double linv) { return linv * 0.9; });
+  std::unique_ptr<PIDF> tank_r_pid = std::make_unique<PIDF>(0.22, 0.0, 0.014);
+  auto tank_pid = std::make_shared<TankPID>(chassis,
+                                            odom,
+                                            std::move(pid_cond),
+                                            std::move(tank_d_pid),
+                                            std::move(tank_r_pid));
+
+  std::unique_ptr<Condition<double>> pp_cond{
+      new Condition<double>{{0.0, 0.04}, 100}
+  };
+  PurePursuit pp{tank_pid, odom, std::move(pp_cond), 2};
 
   odom->set_position(0.0, 0.0);
   odom->set_heading(0.0);
 
   std::shared_ptr<TankModel> model{new TankModel(1.7, 5.0, 3.0, 0.248, 0.3)};
   std::shared_ptr<LinearMotionProfile> fast_profile{
-      new TrapezoidalMotionProfile(1.7, 5.0, 2.0)};
+      new TrapezoidalMotionProfile(1.6, 5.0, 2.0)};
   std::shared_ptr<LinearMotionProfile> slow_profile{
       new TrapezoidalMotionProfile(1.0, 3.0, 2.0)};
 
-  // tuning();
-  ctrl.follow(
+  auto trajectory =
       SplineTrajectory{
           padded_spline(
               {{0, 0}, {0.0, 0.3}, {-0.6, 0.5}},
@@ -230,8 +259,15 @@ void autonomous() {
           fast_profile,
           model
   }
-          .get_profile(),
-      6000);
+          .get_trajectory();
+  // tuning();
+  // ramsete.follow(trajectory, 6000);
+  // boom->move_to_pose({-0.5, 0.7, 0.0}, 3000);
+  // tank_pid->move_to_pose({-0.5, 0.7});
+  pp.follow(trajectory, 0.07, 5000);
+
+  // TODO: profile linear motion
+
   /**/
 
   /*

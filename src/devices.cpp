@@ -202,8 +202,8 @@ void configure_odometry() {
   /* really bad, idk why */
   odom = ImuOdometry::Builder()
              .with_gyro(imu)
-             .with_x_enc(enc_x, {0, 0.16 / 360.0})
-             .with_y_enc(enc_y, {-0.0508, 0.16 / 360.0})
+             .with_x_enc(enc_x, {0.0, 0.16 / 360.0})
+             .with_y_enc(enc_y, {-0.051, 0.16 / 360.0})
              .build();
   odom->auto_update(10);
 }

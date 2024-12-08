@@ -2,6 +2,7 @@
 
 #include "subzerolib/api/control/mtp-controller.hpp"
 #include "subzerolib/api/geometry/pose.hpp"
+#include "subzerolib/api/geometry/trajectory-point.hpp"
 #include "subzerolib/api/logic/exit-condition.hpp"
 #include "subzerolib/api/odometry/odometry.hpp"
 
@@ -28,20 +29,40 @@ public:
   ///
   /// @param waypoints a vector of waypoints
   /// @param lookahead range for pure-pursuit smoothening
-  /// @param ms_timeout maximum controller run time
+  /// @param timeout_ms maximum controller run time
   /// @param resolution number of physics steps per iteration, >= 1
   void follow(const std::vector<pose_s> &waypoints,
               double lookahead,
-              int ms_timeout = 5000);
+              int timeout_ms = 5000);
 
   /// @brief follows the path described by the linear spline connecting the
   /// waypoints without blocking
   ///
   /// @param waypoints a vector of waypoints
   /// @param lookahead range for pure-pursuit smoothening
-  /// @param ms_timeout maximum controller run time
+  /// @param timeout_ms maximum controller run time
   /// @param resolution number of physics steps per iteration, >= 1
   void follow_async(const std::vector<pose_s> &waypoints,
+                    double lookahead,
+                    int timeout_ms = 5000);
+
+  /// @brief follows the trajectory
+  ///
+  /// @param waypoints a vector of waypoints
+  /// @param lookahead range for pure-pursuit smoothening
+  /// @param timeout_ms maximum controller run time
+  /// @param resolution number of physics steps per iteration, >= 1
+  void follow(const std::vector<trajectory_point_s> &trajectory,
+              double lookahead,
+              int timeout_ms = 5000);
+
+  /// @brief follows the trajectory without blocking
+  ///
+  /// @param waypoints a vector of waypoints
+  /// @param lookahead range for pure-pursuit smoothening
+  /// @param timeout_ms maximum controller run time
+  /// @param resolution number of physics steps per iteration, >= 1
+  void follow_async(const std::vector<trajectory_point_s> &trajectory,
                     double lookahead,
                     int timeout_ms = 5000);
 
@@ -55,9 +76,9 @@ public:
   bool is_settled() { return settled.load(); }
 
 private:
-  void select_carrot(std::vector<pose_s>::const_iterator current,
+  void select_carrot(std::vector<trajectory_point_s>::const_iterator current,
                      double lookahead,
-                     pose_s &carrot);
+                     trajectory_point_s &carrot);
   int resolution = 1;
 
   std::shared_ptr<MtpController> ctrl;
