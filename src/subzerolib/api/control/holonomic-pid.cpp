@@ -1,8 +1,5 @@
 #include "subzerolib/api/control/holonomic-pid.hpp"
-#include "pros/misc.hpp"
 #include "subzerolib/api/logic/exit-condition.hpp"
-#include "subzerolib/api/util/auto-updater.hpp"
-#include "subzerolib/api/util/logging.hpp"
 #include "subzerolib/api/util/math.hpp"
 
 void HolonomicPID::approach_pose(pose_s target, double linv) {
