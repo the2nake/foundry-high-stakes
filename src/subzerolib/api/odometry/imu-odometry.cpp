@@ -68,7 +68,7 @@ void ImuOdometry::update() {
   double x_impact_lx = 0.0, x_impact_ly = 0.0, y_impact_lx = 0.0,
          y_impact_ly = 0.0;
   // for reference: maximum rotation = 2 deg / 10 ms
-  bool is_low_turn = std::abs(dh) < 0.3;
+  bool is_low_turn = std::abs(dh) < 0.1;
 
   for (int i = 0; i < x_enc_raws.size(); ++i) {
     if (is_low_turn) {
@@ -99,10 +99,10 @@ void ImuOdometry::update() {
 
   auto dx_l = x_impact_lx + y_impact_lx;
   auto dy_l = x_impact_ly + y_impact_ly;
-  auto dx_g = dx_l * std::cos(in_rad(prev_heading)) +
-              dy_l * std::sin(in_rad(prev_heading));
-  auto dy_g = -dx_l * std::sin(in_rad(prev_heading)) +
-              dy_l * std::cos(in_rad(prev_heading));
+  auto dx_g = dx_l * std::cos(in_rad(pose.heading())) +
+              dy_l * std::sin(in_rad(pose.heading()));
+  auto dy_g = -dx_l * std::sin(in_rad(pose.heading())) +
+              dy_l * std::cos(in_rad(pose.heading()));
   prev_heading = raw_h;
 
   if (is_enabled()) {
@@ -124,14 +124,14 @@ ImuOdometry::Builder::with_gyro(std::shared_ptr<AbstractGyro> igyro) {
 
 ImuOdometry::Builder &
 ImuOdometry::Builder::with_x_enc(std::shared_ptr<AbstractEncoder> encoder,
-                                  encoder_conf_s conf) {
+                                 encoder_conf_s conf) {
   x_encs.emplace_back(std::move(encoder), conf);
   return *this;
 }
 
 ImuOdometry::Builder &
 ImuOdometry::Builder::with_y_enc(std::shared_ptr<AbstractEncoder> encoder,
-                                  encoder_conf_s conf) {
+                                 encoder_conf_s conf) {
   y_encs.emplace_back(std::move(encoder), conf);
   return *this;
 }
@@ -160,12 +160,8 @@ std::shared_ptr<ImuOdometry> ImuOdometry::Builder::build() {
   odom->gyro = gyro;
   odom->x_encs = x_encs;
   odom->y_encs = y_encs;
-  for (auto &enc : x_encs) {
-    enc.first->set_deg(0.0);
-  }
-  for (auto &enc : y_encs) {
-    enc.first->set_deg(0.0);
-  }
+  for (auto &enc : x_encs) { enc.first->set_deg(0.0); }
+  for (auto &enc : y_encs) { enc.first->set_deg(0.0); }
 
   odom->prev_x_enc_vals = std::vector<double>(x_encs.size(), std::nan(""));
   odom->prev_y_enc_vals = std::vector<double>(y_encs.size(), std::nan(""));
