@@ -22,8 +22,8 @@ extern pros::adi::Potentiometer rot_wrist;
 extern pros::Rotation rot_arm;
 
 extern Piston clamp;
-extern Piston flipper;
-extern Piston intake_hover;
+extern Piston doinker;
+extern Piston lifter;
 extern std::shared_ptr<Arm> arm;
 
 extern std::shared_ptr<AbstractGyro> imu;

@@ -2,7 +2,7 @@
 #include "devices.hpp"
 #include "ports.h"
 
-#define DEBUG
+//#define DEBUG
 
 namespace saturnine {
 bool running = true;
@@ -193,7 +193,7 @@ void arm_exec_loop(void *ignore) {
 void initialize() {
   subzero::set_log_area(0, 18, 480, 240);
 
-  flipper.set_state(true);
+  doinker.set_state(true);
   initialise_devices();
 
   // pros::Task graphing_task{odom_disp_loop, nullptr, "odom display task"};
@@ -267,9 +267,9 @@ void opcontrol() {
     }
 
     if (master.get_digital(bind_intake_in)) {
-      arm->move_intake(127);
+      arm->move_intake(12000);
     } else if (master.get_digital(bind_intake_out)) {
-      arm->move_intake(-127);
+      arm->move_intake(-12000);
     } else {
       arm->move_intake(0);
     }
@@ -294,11 +294,11 @@ void opcontrol() {
     }
 
     if (master.get_digital_new_press(bind_flipper)) {
-      flipper.toggle();
+      doinker.toggle();
     }
 
     if (master.get_digital_new_press(bind_hover)) {
-      intake_hover.toggle();
+      lifter.toggle();
     }
 
     if (master.get_digital_new_press(bind_wall)) {

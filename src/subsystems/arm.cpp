@@ -1,4 +1,5 @@
 #include "arm.hpp"
+#include "subzerolib/api/util/math.hpp"
 // #include "subzerolib/api/util/logging.hpp"
 
 void Arm::score() {
@@ -28,7 +29,7 @@ void Arm::toggle_wall_mode() {
   }
 }
 
-const double arm_high_pos = 245.0;
+const double arm_high_pos = 245.5;
 
 // updates the targets and the state
 void Arm::update() {
@@ -63,7 +64,7 @@ void Arm::update() {
   case state_e_t::score_m:
     this->wrist_target = 260.0;
     this->wrist_vel = 60.0;
-    this->arm_target = 145.5;
+    this->arm_target = 146.3;
 
     if (this->wrist->get_position() > 257.0) {
       this->state = state_e_t::recover;
@@ -136,14 +137,17 @@ void Arm::execute() {
     if (output > 3500.0) {
       output = 3500.0;
     }
+    if (enc_arm->get_deg() > arm_high_pos - 1.0) {
+      clamp_val(output, -4000.0, 12000.0);
+    }
     this->intake->move_voltage(output);
   } else {
     this->arm_ctrl.reset();
   }
 }
 
-void Arm::move_intake(int v) {
+void Arm::move_intake(int mv) {
   if (!arm_target.has_value()) {
-    this->intake->move(v);
+    this->intake->move_voltage(mv);
   }
 }

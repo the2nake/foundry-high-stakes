@@ -45,8 +45,8 @@ std::unique_ptr<pros::adi::DigitalOut> piston_hover{
     new pros::adi::DigitalOut(ADI_HOVER, false)};
 
 Piston clamp({std::move(piston_clamp)});
-Piston flipper({std::move(piston_flipper)});
-Piston intake_hover({std::move(piston_hover)});
+Piston doinker({std::move(piston_flipper)});
+Piston lifter({std::move(piston_hover)});
 
 std::shared_ptr<AbstractGyro> imu_1{
     new AbstractImuGyro(PORT_IMU, (6 * 360.0 + 26.05) / (6 * 360.0 + 0))};

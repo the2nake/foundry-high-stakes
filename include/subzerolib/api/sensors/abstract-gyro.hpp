@@ -23,7 +23,7 @@ public:
   /// @returns a abstract gyroscope object
   AbstractImuGyro(std::uint8_t iport, double i_scale = 1.0)
       : pros::Imu(iport), scale(i_scale) {
-    set_data_rate(5);
+    // set_data_rate(5);
   }
 
   /// @brief check if the sensor is ready

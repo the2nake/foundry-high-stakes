@@ -10,7 +10,7 @@
 #include <memory>
 
 class Arm {
-private:
+public:
   enum class state_e_t {
     recover,
     accept,
@@ -22,7 +22,6 @@ private:
     score_w,
   };
 
-public:
   Arm(std::unique_ptr<pros::AbstractMotor> i_intake,
       std::unique_ptr<pros::AbstractMotor> i_wrist,
       std::unique_ptr<AbstractEncoder> i_enc_arm,
@@ -44,8 +43,10 @@ public:
 
   void score();
 
-  /// v is from -127 to 127
-  void move_intake(int v);
+  state_e_t get_state() { return this->state; }
+
+  /// v is from -12000 to 12000
+  void move_intake(int mv);
 
 private:
   void update();
@@ -58,7 +59,7 @@ private:
 
   std::optional<double> wrist_target = std::nullopt;
   std::optional<double> arm_target = std::nullopt;
-  PIDF arm_ctrl{200.00, 1200.0, 20.0, true}; // output: mV
+  PIDF arm_ctrl{200.00, 1250.0, 20.0, true}; // output: mV
   PIDF wrist_ctrl{30.00, 0.0, 1.0};          // TODO: tuning
 
   double wrist_vel = 100.0;

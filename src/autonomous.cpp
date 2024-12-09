@@ -76,12 +76,12 @@ void turn_to_angle(void *target_ptr) {
 
   while (std::abs(pid_ang.get_output()) > 2.0 || std::isnan(error) ||
          ms_ok < 100.0) {
-    if (std::abs(error) > 2) {
+    if (std::abs(error) > 2.2) {
       ms_ok = 0.0;
     } else {
       ms_ok += delta;
     }
-    error = shorter_turn(imu->degrees(), target);
+    error = shorter_turn(odom->get_pose().heading(), target);
     auto output = pid_ang.update(error);
 
     slew_inc(output, prev, 0.01, delta);
@@ -107,7 +107,7 @@ void move_distance(void *target_ptr) {
   double err_lin = std::nan("");
   double err_ang = std::nan("");
 
-  double initial_angle = imu->degrees();
+  double initial_angle = odom->get_pose().heading();
   double initial_y = enc_y->get_deg();
 
   const double dist_per_deg = 0.16 / 360.0;
@@ -130,7 +130,7 @@ void move_distance(void *target_ptr) {
       ms_ok += delta;
     }
     err_lin = target - (enc_y->get_deg() - initial_y) * dist_per_deg;
-    err_ang = shorter_turn(imu->degrees(), initial_angle);
+    err_ang = shorter_turn(odom->get_pose().heading(), initial_angle);
 
     auto out_lin = pid_lin.update(err_lin);
     slew_inc(out_lin, prev_lin, 0.0001, delta);
@@ -202,7 +202,6 @@ void autonomous() {
 
   pros::Task *motion = nullptr;
 
-  flipper.set_state(true);
   Ramsete ramsete{2.1,
                   0.7,
                   odom,
@@ -223,25 +222,33 @@ void autonomous() {
                                           0.3,
                                           0.15);
 
-  std::unique_ptr<Condition<double>> pid_cond{
-      new Condition<double>{{0.0, 0.03}, 50}
+  std::unique_ptr<Condition<double>> pp_pid_cond{
+      new Condition<double>{{0.0, 0.04}, 50}
   };
-  std::unique_ptr<PIDF> tank_d_pid = std::make_unique<PIDF>(
+  std::unique_ptr<PIDF> profiled_lin_pid = std::make_unique<PIDF>(
       0.1, 0.0, 0.0, false, [](double linv) { return linv * 0.9; });
-  std::unique_ptr<PIDF> tank_r_pid = std::make_unique<PIDF>(0.22, 0.0, 0.014);
-  auto tank_pid = std::make_shared<TankPID>(chassis,
-                                            odom,
-                                            std::move(pid_cond),
-                                            std::move(tank_d_pid),
-                                            std::move(tank_r_pid));
+  std::unique_ptr<PIDF> pp_rot_pid = std::make_unique<PIDF>(0.22, 0.0, 0.014);
+  auto pp_tank_pid = std::make_shared<TankPID>(chassis,
+                                               odom,
+                                               std::move(pp_pid_cond),
+                                               std::move(profiled_lin_pid),
+                                               std::move(pp_rot_pid));
 
   std::unique_ptr<Condition<double>> pp_cond{
       new Condition<double>{{0.0, 0.04}, 100}
   };
-  PurePursuit pp{tank_pid, odom, std::move(pp_cond), 2};
+  PurePursuit pp{pp_tank_pid, odom, std::move(pp_cond), 2};
 
-  odom->set_position(0.0, 0.0);
-  odom->set_heading(0.0);
+  std::unique_ptr<Condition<double>> pid_cond{
+      new Condition<double>{{0.0, 0.03}, 50}
+  };
+  std::unique_ptr<PIDF> lin_pid = std::make_unique<PIDF>(3.0, 0.0, 0.0);
+  std::unique_ptr<PIDF> rot_pid = std::make_unique<PIDF>(0.28, 0.0, 0.022);
+  auto tank_pid = std::make_shared<TankPID>(chassis,
+                                            odom,
+                                            std::move(pid_cond),
+                                            std::move(lin_pid),
+                                            std::move(rot_pid));
 
   std::shared_ptr<TankModel> model{new TankModel(1.7, 5.0, 3.0, 0.248, 0.3)};
   std::shared_ptr<LinearMotionProfile> fast_profile{
@@ -249,6 +256,39 @@ void autonomous() {
   std::shared_ptr<LinearMotionProfile> slow_profile{
       new TrapezoidalMotionProfile(1.0, 3.0, 2.0)};
 
+  odom->set_position(-0.6, -1.5);
+  odom->set_heading(90.0);
+
+  clamp.set_state(false);
+  doinker.set_state(false);
+  lifter.set_state(true);
+
+  arm->move_intake(12000);
+  tank_pid->move_to_pose({-0.05, -1.2}, 900);
+  lifter.set_state(false);
+  pros::delay(250);
+
+  move_distance(-0.08);
+  turn_to_angle(315.0);
+  boom->move_to_pose({0.0, -1.55, 0.0}, 2000);
+  arm->score();
+  pros::delay(800);
+
+  while (arm->get_state() != Arm::state_e_t::ready_m) { pros::delay(50); }
+  /*
+    arm->move_intake(12000);
+    move_distance(0.16);
+    lifter.set_state(false);
+    pros::delay(250);
+    move_distance(-0.08);
+    tank_pid->move_to_pose({-1.0, -0.8}, 1500);
+    boom->move_to_pose({-1.2, -0.6, -90.0}, 1000);
+
+    move_distance(-0.55);
+    clamp.set_state(true);
+    arm->score();
+    while (arm->get_state() != Arm::state_e_t::ready_m) { pros::delay(50); }
+  */
   auto trajectory =
       SplineTrajectory{
           padded_spline(
@@ -260,11 +300,13 @@ void autonomous() {
           model
   }
           .get_trajectory();
+  /**/
+
   // tuning();
   // ramsete.follow(trajectory, 6000);
   // boom->move_to_pose({-0.5, 0.7, 0.0}, 3000);
   // tank_pid->move_to_pose({-0.5, 0.7});
-  pp.follow(trajectory, 0.07, 5000);
+  // pp.follow(trajectory, 0.07, 5000);
 
   // TODO: profile linear motion
 
