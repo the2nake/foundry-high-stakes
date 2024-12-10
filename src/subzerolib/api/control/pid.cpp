@@ -22,7 +22,10 @@ double PIDF::update(double error, double ff_input) {
       (this->cut && not_same_sgn)) {
     total_err = 0.0;
   }
-  total_err += error * dt;
+  total_err +=
+      0.5 * (error + (std::isnan(prev_err.load()) ? error : prev_err.load())) *
+      dt; // trapezoid summation
+
   double p = kp * error;
   double i = ki * total_err;
   double d = 0.0;
