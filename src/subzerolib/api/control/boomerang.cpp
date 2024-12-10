@@ -79,7 +79,7 @@ void Boomerang::approach_pose(pose_s target, double linv) {
 }
 
 void Boomerang::stop() {
-  this->chassis->move_vels({0, 0});
   this->pos_exit->reset();
   this->settled = true;
+  this->chassis->move(0, 0, 0);
 }
