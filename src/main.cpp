@@ -2,7 +2,7 @@
 #include "devices.hpp"
 #include "ports.h"
 
-//#define DEBUG
+// #define DEBUG
 
 namespace saturnine {
 bool running = true;
@@ -267,11 +267,11 @@ void opcontrol() {
     }
 
     if (master.get_digital(bind_intake_in)) {
-      arm->move_intake(12000);
+      arm->intake(12000);
     } else if (master.get_digital(bind_intake_out)) {
-      arm->move_intake(-12000);
+      arm->intake(-12000);
     } else {
-      arm->move_intake(0);
+      arm->intake(0);
     }
 
     /*

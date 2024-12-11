@@ -10,6 +10,12 @@ void Arm::score() {
   }
 }
 
+void Arm::score_alliance() {
+  if (this->state == state_e_t::ready_m) {
+    this->state = state_e_t::score_al;
+  }
+}
+
 void Arm::switch_mode_to_wall(bool mode) {
   if (mode && this->state == state_e_t::ready_m) {
     this->state = state_e_t::trans_to_w;
@@ -35,7 +41,7 @@ const double arm_high_pos = 245.5;
 void Arm::update() {
   switch (this->state) {
   case state_e_t::recover:
-    this->wrist_vel = 100.0;
+    this->wrist_vel = 90.0;
     if (this->enc_arm->get_deg() > 200) {
       this->wrist_target = 191.0;
     } else if (this->enc_arm->get_deg() > 144.0) {
@@ -46,7 +52,8 @@ void Arm::update() {
 
     this->arm_target = 140.0;
 
-    if (this->enc_arm->get_deg() < 142 && this->wrist->get_position() < 3.0) {
+    if (this->enc_arm->get_deg() < 142 &&
+        this->mtr_wrist->get_position() < 3.0) {
       this->state = state_e_t::accept;
       this->update();
     }
@@ -64,9 +71,19 @@ void Arm::update() {
   case state_e_t::score_m:
     this->wrist_target = 260.0;
     this->wrist_vel = 60.0;
-    this->arm_target = 146.3;
+    this->arm_target = 146;
 
-    if (this->wrist->get_position() > 257.0) {
+    if (this->mtr_wrist->get_position() > 257.0) {
+      this->state = state_e_t::recover;
+      this->update();
+    }
+    break;
+  case state_e_t::score_al:
+    this->wrist_target = 265.0;
+    this->wrist_vel = 50.0;
+    this->arm_target = 151.0;
+
+    if (this->mtr_wrist->get_position() > 263.0) {
       this->state = state_e_t::recover;
       this->update();
     }
@@ -75,14 +92,14 @@ void Arm::update() {
     this->wrist_vel = 50.0;
     this->wrist_target = 70.0;
 
-    if (this->wrist->get_position() >= 67.0) {
+    if (this->mtr_wrist->get_position() >= 67.0) {
       this->arm_target = arm_high_pos;
     }
     if (this->enc_arm->get_deg() > 160.0) {
       this->wrist_target = 210.0;
     }
 
-    if (this->wrist->get_position() >= 190.0 &&
+    if (this->mtr_wrist->get_position() >= 190.0 &&
         this->enc_arm->get_deg() >= arm_high_pos - 1.0) {
       this->state = state_e_t::ready_w;
       this->update();
@@ -97,7 +114,7 @@ void Arm::update() {
     this->wrist_target = 110.0;
     this->wrist_vel = 60.0;
 
-    if (this->wrist->get_position() <= 115.0) {
+    if (this->mtr_wrist->get_position() <= 115.0) {
       this->state = state_e_t::recover;
       this->update();
     }
@@ -126,7 +143,7 @@ void Arm::execute() {
   update();
 
   if (wrist_target.has_value()) {
-    this->wrist->move_absolute(wrist_target.value(), this->wrist_vel);
+    this->mtr_wrist->move_absolute(wrist_target.value(), this->wrist_vel);
   }
 
   if (arm_target.has_value()) {
@@ -140,14 +157,16 @@ void Arm::execute() {
     if (enc_arm->get_deg() > arm_high_pos - 1.0) {
       clamp_val(output, -4000.0, 12000.0);
     }
-    this->intake->move_voltage(output);
+    this->mtr_intake->move_voltage(output);
   } else {
     this->arm_ctrl.reset();
+    this->mtr_intake->move_voltage(this->prev_intake_mv);
   }
 }
 
-void Arm::move_intake(int mv) {
-  if (!arm_target.has_value()) {
-    this->intake->move_voltage(mv);
+void Arm::intake(int mv) {
+  if (!this->arm_target.has_value()) {
+    this->mtr_intake->move_voltage(mv);
   }
+  this->prev_intake_mv = mv;
 }

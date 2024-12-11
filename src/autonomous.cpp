@@ -64,7 +64,7 @@ void turn_to_angle(void *target_ptr) {
   delete (double *)target_ptr;
 
   // ! TUNE
-  PIDF pid_ang{0.03, 0.02, 0.004, true}; // old kd 0.004
+  PIDF pid_ang{0.021, 0.05, 0.006, true}; // old kd 0.004
   double error = std::nan("");
 
   std::uint32_t timestamp = pros::millis();
@@ -75,8 +75,8 @@ void turn_to_angle(void *target_ptr) {
   double prev = 0.0;
 
   while (std::abs(pid_ang.get_output()) > 2.0 || std::isnan(error) ||
-         ms_ok < 100.0) {
-    if (std::abs(error) > 2.2) {
+         ms_ok < 50.0) {
+    if (std::abs(error) > 3) {
       ms_ok = 0.0;
     } else {
       ms_ok += delta;
@@ -90,9 +90,10 @@ void turn_to_angle(void *target_ptr) {
     chassis->move(0, 0, output);
     pros::Task::delay_until(prev_ptr, delta);
   }
+  chassis->move(0, 0, 0);
 }
 
-void turn_to_angle(double target) { turn_to_angle(new double(target)); }
+void turn_to(double target) { turn_to_angle(new double(target)); }
 
 pros::Task *turn_to_angle_async(double target) {
   return new pros::Task(turn_to_angle, new double(target), "pid turning");
@@ -139,6 +140,7 @@ void move_distance(void *target_ptr) {
     chassis->move(0, pid_lin.update(err_lin), pid_ang.update(err_ang));
     pros::Task::delay_until(prev_ptr, delta);
   }
+  chassis->move(0, 0, 0);
 }
 
 void move_distance(double target) { move_distance(new double(target)); }
@@ -197,6 +199,146 @@ void tuning() {
   out.close();
 }
 
+void local_awp(std::shared_ptr<TankPID> &tank_pid,
+               std::shared_ptr<Boomerang> &boom) {
+  odom->set_position(-0.6, -1.5);
+  odom->set_heading(90.0);
+  clamp.set_state(false);
+  doinker.set_state(false);
+  lifter.set_state(true);
+
+  arm->intake(12000);
+  tank_pid->move_to_pose({-0.13, -1.27}, 900);
+  lifter.set_state(false);
+  pros::delay(400);
+
+  move_distance(-0.09);
+  pros::delay(400);
+  turn_to(315.0);
+  boom->move_to_pose({0.0, -1.52, -0.5}, 1250);
+  arm->intake(0);
+  arm->score_alliance();
+  pros::delay(800);
+
+  tank_pid->move_to_pose({-1.2, -0.6}, 600);
+  arm->intake(12000);
+  boom->move_to_pose({-1.3, -0.6, -90.0}, 1500);
+
+  boom->move_to_pose({-0.43, -0.6, -90.0}, 700);
+  clamp.set_state(true);
+  pros::delay(100);
+  boom->move_to_pose({-0.6, -1.2}, 2000);
+  arm->intake(0.0);
+  arm->score();
+  while (arm->get_state() != Arm::state_e_t::ready_m) { pros::delay(50); }
+}
+
+void worlds_awp1_blue(std::shared_ptr<TankPID> tank_pid,
+                      std::shared_ptr<Boomerang> boom,
+                      std::shared_ptr<PurePursuit> pp) {
+  std::shared_ptr<TankModel> model{new TankModel(1.7, 5.0, 3.0, 0.248, 0.3)};
+  std::shared_ptr<LinearMotionProfile> fast_profile{
+      new TrapezoidalMotionProfile(1.6, 4.0, 2.0)};
+  std::shared_ptr<LinearMotionProfile> slow_profile{
+      new TrapezoidalMotionProfile(1.0, 3.0, 2.0)};
+
+  odom->set_position(-0.6, -1.5);
+  odom->set_heading(0.0);
+  clamp.set_state(false);
+  doinker.set_state(false);
+  lifter.set_state(false);
+
+  // intake ring under stack
+  arm->intake(12000);
+  boom->move_to_pose({-1.28, -0.63, -60.0}, 1300);
+
+  // get the goal and score 2 rings
+  pros::Task ign{
+      [&boom]() { boom->move_to_pose({-0.685, -0.635, -90.0}, 820); }};
+  pros::delay(760);
+  clamp.set_state(true);
+  pros::delay(150);
+  boom->move_to_pose({-0.6, -1.35, -20.0}, 1000);
+  arm->intake(0.0);
+  arm->score();
+  pros::delay(800);
+  turn_to(45.0);
+  clamp.set_state(false);
+
+  // knock
+  boom->move_to_pose({-0.3, -1.435, 105.0}, 800);
+  doinker.set_state(true);
+  pros::delay(150);
+  turn_to(20.0);
+  doinker.set_state(false);
+  //   while (arm->get_state() != Arm::state_e_t::ready_m) { pros::delay(50); }
+
+  // get ring
+  arm->intake(12000);
+  boom->move_to_pose({0.05, -1.0, 80.0}, 1000);
+
+  // retreat
+  move_distance(-0.1);
+  turn_to(0.0);
+  boom->move_to_pose({0.08, -1.68, -60}, 1200);
+  boom->move_to_pose({0.0, -1.2, 0.0}, 300);
+  boom->move_to_pose({0.0, -1.69, 0.0}, 800);
+  arm->score_alliance();
+  pros::delay(700);
+
+  // go to ring (intake is still on)
+  boom->move_to_pose({1.15, -1.0, 45.0}, 700);
+  boom->move_to_pose({1.1, -0.62, 0.0}, 1500);
+  pros::delay(300);
+  arm->intake(0);
+  turn_to(80.0);
+  move_distance(0.03);
+  pros::Task ign_2{[&boom]() { boom->move_to_pose({0.6, -0.64, 90.0}, 1300); }};
+  pros::delay(600);
+  arm->intake(12000);
+  pros::delay(650);
+  clamp.set_state(true);
+  turn_to(0.0);
+  arm->score();
+  move_distance(0.3);
+}
+
+void worlds_awp2_red(std::shared_ptr<TankPID> tank_pid,
+                     std::shared_ptr<Boomerang> boom,
+                     std::shared_ptr<PurePursuit> pp) {
+  odom->set_position(-0.3, -1.5);
+  odom->set_heading(180.0);
+  clamp.set_state(false);
+  doinker.set_state(true);
+  lifter.set_state(false);
+
+  // swing top ring off
+  move_distance(-0.3);
+  turn_to(120.0);
+
+  /*
+  // get goal
+  boom->move_to_pose({-0.6, -0.6, 150.0}, 1300);
+  clamp.set_state(true);
+  turn_to_angle(-90.0);
+  arm->intake(12000);
+  tank_pid->move_to_pose({-1.2, -0.6}, 1000);
+  move_distance(-0.05);
+  arm->intake(0);
+  arm->score();
+
+  // set goal to a "safe" place
+  boom->move_to_pose({-0.6, -1.2, 180.0}, 1500);
+  clamp.set_state(false);
+
+  // weave around rings
+  arm->intake(12000);
+  boom->move_to_pose({0.0, -0.9, 90}, 1100);
+  boom->move_to_pose({0.6, -1.5, 135}, 1500);
+  turn_to_angle(90.0);
+  */
+}
+
 void autonomous() {
   auto start_ts = pros::millis();
 
@@ -212,8 +354,8 @@ void autonomous() {
   std::unique_ptr<Condition<double>> boom_cond{
       new Condition<double>{{0.0, 0.05}, 50}
   };
-  std::unique_ptr<PIDF> boom_d_pid = std::make_unique<PIDF>(2.6, 0.0, 0.33);
-  std::unique_ptr<PIDF> boom_r_pid = std::make_unique<PIDF>(0.33, 0.0, 0.040);
+  std::unique_ptr<PIDF> boom_d_pid = std::make_unique<PIDF>(2.7, 0.0, 0.34);
+  std::unique_ptr<PIDF> boom_r_pid = std::make_unique<PIDF>(0.33, 0.0, 0.042);
   auto boom = std::make_shared<Boomerang>(chassis,
                                           odom,
                                           std::move(boom_cond),
@@ -237,7 +379,8 @@ void autonomous() {
   std::unique_ptr<Condition<double>> pp_cond{
       new Condition<double>{{0.0, 0.04}, 100}
   };
-  PurePursuit pp{pp_tank_pid, odom, std::move(pp_cond), 2};
+  auto pp =
+      std::make_shared<PurePursuit>(pp_tank_pid, odom, std::move(pp_cond), 2);
 
   std::unique_ptr<Condition<double>> pid_cond{
       new Condition<double>{{0.0, 0.03}, 50}
@@ -256,39 +399,13 @@ void autonomous() {
   std::shared_ptr<LinearMotionProfile> slow_profile{
       new TrapezoidalMotionProfile(1.0, 3.0, 2.0)};
 
-  odom->set_position(-0.6, -1.5);
-  odom->set_heading(90.0);
-
-  clamp.set_state(false);
-  doinker.set_state(false);
-  lifter.set_state(true);
-
-  arm->move_intake(12000);
-  tank_pid->move_to_pose({-0.05, -1.2}, 900);
-  lifter.set_state(false);
-  pros::delay(250);
-
-  move_distance(-0.08);
-  turn_to_angle(315.0);
-  boom->move_to_pose({0.0, -1.55, 0.0}, 2000);
-  arm->score();
-  pros::delay(800);
-
-  while (arm->get_state() != Arm::state_e_t::ready_m) { pros::delay(50); }
   /*
-    arm->move_intake(12000);
-    move_distance(0.16);
-    lifter.set_state(false);
-    pros::delay(250);
-    move_distance(-0.08);
-    tank_pid->move_to_pose({-1.0, -0.8}, 1500);
-    boom->move_to_pose({-1.2, -0.6, -90.0}, 1000);
-
-    move_distance(-0.55);
-    clamp.set_state(true);
-    arm->score();
-    while (arm->get_state() != Arm::state_e_t::ready_m) { pros::delay(50); }
+  // ! not rlly working
+  local_awp(tank_pid, boom);
   */
+  worlds_awp1_blue(tank_pid, boom, pp);
+  // worlds_awp2_red(tank_pid, boom, pp);
+
   auto trajectory =
       SplineTrajectory{
           padded_spline(
@@ -310,46 +427,7 @@ void autonomous() {
 
   // TODO: profile linear motion
 
-  /**/
-
-  /*
-  move_distance(1.01);
-  pros::delay(100);
-  turn_to_angle(315.0);
-  arm->move_intake(127);
-  move_distance(0.16);
-  pros::delay(500);
-  flipper.set_state(false);
-
-  move_distance(-0.17);
-  turn_to_angle(98);
-  move_distance(-0.64);
-  turn_to_angle(40.0);
-  move_distance(-0.33);
-  clamp.set_state(true);
-  pros::delay(150);
-
-  // go for the stack
-  arm->score();
-  pros::delay(800);
-  turn_to_angle(90);
-  // wait until arm is ready
-  move_distance(0.43);
-  pros::delay(400);
-  arm->move_intake(0);
-
-  turn_to_angle(147);
-  arm->move_intake(127);
-  // flipper.set_state(true);
-  move_distance(1.03);
-  pros::delay(300); // get the bottom ring in
-  move_distance(-0.6);
-  turn_to_angle(340);
-  clamp.set_state(false);
-  turn_to_angle(73);
-  /**/
-
-  arm->move_intake(0);
+  arm->intake(0);
   clamp.set_state(false);
   subzero::log("[i]: auto finished in %d ms", pros::millis() - start_ts);
 }
