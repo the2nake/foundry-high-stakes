@@ -411,6 +411,16 @@ void skills(std::shared_ptr<TankPID> tank_pid,
   boom->move_to_pose({-0.62, -1.2, 90.0}, 2500);
   boom->move_to_pose({-1.6, -1.6, 45.0}, 3000);
   clamp.set_state(false);
+  pros::delay(400);
+  move_distance(0.3);
+  move_distance(-0.3);
+  move_distance(0.6);
+
+  boom->move_to_pose({1.5, -1.5, 90.0}, 3000);
+  turn_to(180.0);
+  boom->move_to_pose({1.3, 0.8, 90.0}, 2500);
+  turn_to(120.0);
+  boom->move_to_pose({-1.6, 1.6, 90.0}, 4000);
   move_distance(0.6);
 }
 
@@ -475,8 +485,8 @@ void autonomous() {
       new TrapezoidalMotionProfile(1.0, 3.0, 2.0)};
 
   // tuning();
-  // worlds_awp1_blue(tank_pid, boom, pp);
-  worlds_awp1_red(tank_pid, boom, pp);
+  worlds_awp1_blue(tank_pid, boom, pp);
+  // worlds_awp1_red(tank_pid, boom, pp);
   // skills(tank_pid, boom, pp);
 
   auto trajectory =
