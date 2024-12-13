@@ -105,6 +105,8 @@ void move_distance(void *target_ptr) {
   double target = *(double *)target_ptr;
   delete (double *)target_ptr;
 
+  const auto start = pros::millis();
+
   PIDF pid_lin{3.5, 0.0, 0.45, true};
   PIDF pid_ang{0.03, 0.0001, 0.0023, true};
   double err_lin = std::nan("");
@@ -127,6 +129,10 @@ void move_distance(void *target_ptr) {
       std::isnan(err_lin) || std::isnan(err_ang) || ms_ok < 50.0 /* ||
        std::abs(err_ang) > 2*/
   ) {
+    if (pros::millis() - start > 3000) {
+      break;
+    }
+
     if (std::abs(err_lin) > 0.03) {
       ms_ok = 0.0;
     } else {
@@ -259,16 +265,17 @@ void worlds_awp1_blue(std::shared_ptr<TankPID> tank_pid,
   // retreat
   turn_to(40.0);
   move_distance(-0.4);
-  turn_to(-60.0);
-  move_distance(-0.39);
-  move_distance(0.1);
+  turn_to(-65.0);
+  move_distance(-0.4);
+  move_distance(0.115);
   turn_to(0.0);
-  move_distance(-0.1);
+  move_distance(-0.105);
   arm->score_alliance();
   pros::delay(800);
   move_distance(0.6);
 }
 
+// left side
 void worlds_awp1_red(std::shared_ptr<TankPID> tank_pid,
                      std::shared_ptr<Boomerang> boom,
                      std::shared_ptr<PurePursuit> pp) {
@@ -301,15 +308,17 @@ void worlds_awp1_red(std::shared_ptr<TankPID> tank_pid,
   }};
   move_distance(1.3);
 
-  turn_to(-280.0);
-  move_distance(-0.76);
+  turn_to(80.0);
+  move_distance(-0.8);
+  move_distance(0.22);
   turn_to(0.0);
-  move_distance(-0.075);
+  move_distance(-0.105);
   arm->score_alliance();
-  pros::delay(500);
-  move_distance(0.3);
+  pros::delay(600);
+  move_distance(0.74);
 }
 
+// right side
 void worlds_awp2_red(std::shared_ptr<TankPID> tank_pid,
                      std::shared_ptr<Boomerang> boom,
                      std::shared_ptr<PurePursuit> pp) {
@@ -401,6 +410,8 @@ void skills(std::shared_ptr<TankPID> tank_pid,
   }};
   boom->move_to_pose({-0.62, -1.2, 90.0}, 2500);
   boom->move_to_pose({-1.6, -1.6, 45.0}, 3000);
+  clamp.set_state(false);
+  move_distance(0.6);
 }
 
 void autonomous() {
@@ -464,8 +475,8 @@ void autonomous() {
       new TrapezoidalMotionProfile(1.0, 3.0, 2.0)};
 
   // tuning();
-  worlds_awp1_blue(tank_pid, boom, pp);
-  // worlds_awp1_red(tank_pid, boom, pp);
+  // worlds_awp1_blue(tank_pid, boom, pp);
+  worlds_awp1_red(tank_pid, boom, pp);
   // skills(tank_pid, boom, pp);
 
   auto trajectory =

@@ -71,7 +71,7 @@ void Arm::update() {
   case state_e_t::score_m:
     this->wrist_target = 270.0;
     this->wrist_vel = 60.0;
-    this->arm_target = 148;
+    this->arm_target = 147;
 
     if (this->mtr_wrist->get_position() > 257.0) {
       this->state = state_e_t::recover;
