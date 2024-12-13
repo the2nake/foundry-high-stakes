@@ -69,9 +69,9 @@ void Arm::update() {
     this->arm_target = std::nullopt;
     break;
   case state_e_t::score_m:
-    this->wrist_target = 260.0;
+    this->wrist_target = 270.0;
     this->wrist_vel = 60.0;
-    this->arm_target = 146;
+    this->arm_target = 148;
 
     if (this->mtr_wrist->get_position() > 257.0) {
       this->state = state_e_t::recover;
@@ -155,7 +155,7 @@ void Arm::execute() {
       output = 3500.0;
     }
     if (enc_arm->get_deg() > arm_high_pos - 1.0) {
-      clamp_val(output, -4000.0, 12000.0);
+      clamp_val(output, -6000.0, 12000.0);
     }
     this->mtr_intake->move_voltage(output);
   } else {

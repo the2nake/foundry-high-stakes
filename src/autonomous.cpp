@@ -5,7 +5,7 @@
 #include "subzerolib/api/trajectory/motion-profile/trapezoidal-motion-profile.hpp"
 #include "subzerolib/api/trajectory/spline-trajectory.hpp"
 
-#include <fstream>
+// #include <fstream>
 
 /*
 void autonomous() {
@@ -63,8 +63,9 @@ void turn_to_angle(void *target_ptr) {
   double target = *(double *)target_ptr;
   delete (double *)target_ptr;
 
-  // ! TUNE
-  PIDF pid_ang{0.021, 0.05, 0.006, true}; // old kd 0.004
+  auto start = pros::millis();
+
+  PIDF pid_ang{0.03, 0.0005, 0.0023, true};
   double error = std::nan("");
 
   std::uint32_t timestamp = pros::millis();
@@ -74,8 +75,9 @@ void turn_to_angle(void *target_ptr) {
 
   double prev = 0.0;
 
-  while (std::abs(pid_ang.get_output()) > 2.0 || std::isnan(error) ||
-         ms_ok < 50.0) {
+  while (pros::millis() - start < 1000 &&
+         (std::abs(pid_ang.get_output()) > 2.0 || std::isnan(error) ||
+          ms_ok < 50.0)) {
     if (std::abs(error) > 3) {
       ms_ok = 0.0;
     } else {
@@ -103,8 +105,8 @@ void move_distance(void *target_ptr) {
   double target = *(double *)target_ptr;
   delete (double *)target_ptr;
 
-  PIDF pid_lin{3.2, 0.25, 0.45, true};
-  PIDF pid_ang{0.042, 0.02, 0.004, true};
+  PIDF pid_lin{3.5, 0.0, 0.45, true};
+  PIDF pid_ang{0.03, 0.0001, 0.0023, true};
   double err_lin = std::nan("");
   double err_ang = std::nan("");
 
@@ -122,7 +124,7 @@ void move_distance(void *target_ptr) {
   std::uint32_t *prev_ptr = &timestamp;
   while (
       std::abs(pid_lin.get_output()) + std::abs(pid_ang.get_output()) > 2.0 ||
-      std::isnan(err_lin) || std::isnan(err_ang) || ms_ok < 100.0 /* ||
+      std::isnan(err_lin) || std::isnan(err_ang) || ms_ok < 50.0 /* ||
        std::abs(err_ang) > 2*/
   ) {
     if (std::abs(err_lin) > 0.03) {
@@ -157,12 +159,6 @@ void stop_task(pros::Task *&task) {
   }
 }
 
-void auto2() {
-  // tuning
-  // move_distance(0.6);
-  // turn_to_angle(120);
-}
-
 int time(std::function<void()> fn) {
   auto start = pros::millis();
   fn();
@@ -177,9 +173,11 @@ padded_spline(std::vector<point_s> points, point_s start_v, point_s end_v) {
 }
 
 void tuning() {
+  /*
   pros::delay(2000);
   auto start_ts = pros::millis();
   std::ofstream out("/usd/tuning.txt", std::ios::out);
+  boom->move_to_pose({0.08, -1.68, -60}, 1200);
   uint32_t prev = pros::millis();
   std::uint32_t *ptr = &prev;
   while (pros::millis() - start_ts < 2000) {
@@ -196,41 +194,22 @@ void tuning() {
     }
     pros::Task::delay_until(ptr, 10);
   }
-  out.close();
-}
-
-void local_awp(std::shared_ptr<TankPID> &tank_pid,
-               std::shared_ptr<Boomerang> &boom) {
-  odom->set_position(-0.6, -1.5);
-  odom->set_heading(90.0);
-  clamp.set_state(false);
-  doinker.set_state(false);
-  lifter.set_state(true);
-
-  arm->intake(12000);
-  tank_pid->move_to_pose({-0.13, -1.27}, 900);
-  lifter.set_state(false);
-  pros::delay(400);
-
-  move_distance(-0.09);
-  pros::delay(400);
-  turn_to(315.0);
-  boom->move_to_pose({0.0, -1.52, -0.5}, 1250);
-  arm->intake(0);
-  arm->score_alliance();
-  pros::delay(800);
-
-  tank_pid->move_to_pose({-1.2, -0.6}, 600);
-  arm->intake(12000);
-  boom->move_to_pose({-1.3, -0.6, -90.0}, 1500);
-
-  boom->move_to_pose({-0.43, -0.6, -90.0}, 700);
-  clamp.set_state(true);
-  pros::delay(100);
-  boom->move_to_pose({-0.6, -1.2}, 2000);
-  arm->intake(0.0);
-  arm->score();
-  while (arm->get_state() != Arm::state_e_t::ready_m) { pros::delay(50); }
+  out.close();*/
+  /*
+  odom->set_heading(0.0);
+  turn_to(20.0); // 20 deg
+  pros::delay(250);
+  turn_to(-20.0); // 40 deg
+  pros::delay(250);
+  turn_to(70.0); // 90 deg
+  pros::delay(250);
+  turn_to(205.0); // 135 deg
+  pros::delay(250);*/
+  move_distance(0.4);
+  pros::delay(250);
+  move_distance(-0.2);
+  pros::delay(250);
+  turn_to(90.0);
 }
 
 void worlds_awp1_blue(std::shared_ptr<TankPID> tank_pid,
@@ -254,89 +233,174 @@ void worlds_awp1_blue(std::shared_ptr<TankPID> tank_pid,
 
   // get the goal and score 2 rings
   pros::Task ign{
-      [&boom]() { boom->move_to_pose({-0.685, -0.635, -90.0}, 820); }};
-  pros::delay(760);
+      [&boom]() { boom->move_to_pose({-0.665, -0.635, -90.0}, 820); }};
+  pros::delay(740);
   clamp.set_state(true);
   pros::delay(150);
-  boom->move_to_pose({-0.6, -1.35, -20.0}, 1000);
+  boom->move_to_pose({-0.6, -1.3, -20.0}, 800);
   arm->intake(0.0);
   arm->score();
-  pros::delay(800);
+  pros::delay(500);
   turn_to(45.0);
   clamp.set_state(false);
 
   // knock
-  boom->move_to_pose({-0.3, -1.435, 105.0}, 800);
+  boom->move_to_pose({-0.36, -1.44, 110.0}, 1100);
   doinker.set_state(true);
-  pros::delay(150);
-  turn_to(20.0);
+  pros::delay(200);
+  turn_to(0.0);
   doinker.set_state(false);
   //   while (arm->get_state() != Arm::state_e_t::ready_m) { pros::delay(50); }
 
   // get ring
   arm->intake(12000);
-  boom->move_to_pose({0.05, -1.0, 80.0}, 1000);
+  boom->move_to_pose({0.05, -1.0, 70.0}, 1000);
 
   // retreat
+  turn_to(40.0);
+  move_distance(-0.4);
+  turn_to(-60.0);
+  move_distance(-0.39);
+  move_distance(0.1);
+  turn_to(0.0);
   move_distance(-0.1);
-  turn_to(0.0);
-  boom->move_to_pose({0.08, -1.68, -60}, 1200);
-  boom->move_to_pose({0.0, -1.2, 0.0}, 300);
-  boom->move_to_pose({0.0, -1.69, 0.0}, 800);
   arm->score_alliance();
-  pros::delay(700);
+  pros::delay(800);
+  move_distance(0.6);
+}
 
-  // go to ring (intake is still on)
-  boom->move_to_pose({1.15, -1.0, 45.0}, 700);
-  boom->move_to_pose({1.1, -0.62, 0.0}, 1500);
-  pros::delay(300);
-  arm->intake(0);
-  turn_to(80.0);
-  move_distance(0.03);
-  pros::Task ign_2{[&boom]() { boom->move_to_pose({0.6, -0.64, 90.0}, 1300); }};
-  pros::delay(600);
+void worlds_awp1_red(std::shared_ptr<TankPID> tank_pid,
+                     std::shared_ptr<Boomerang> boom,
+                     std::shared_ptr<PurePursuit> pp) {
+  odom->set_position(-0.35, -1.25);
+  odom->set_heading(128.0);
+  clamp.set_state(false);
+  doinker.set_state(true);
+  lifter.set_state(false);
+
+  // swing top ring off
+  turn_to(-20.0);
+  turn_to(-52.0);
   arm->intake(12000);
-  pros::delay(650);
+  move_distance(0.8);
+  move_distance(0.25);
+  turn_to(-95.0);
+
+  // get goal + score
+  boom->move_to_pose({-0.6, -0.6, -90.0}, 900);
   clamp.set_state(true);
-  turn_to(0.0);
+  pros::delay(400);
+  turn_to(120.0);
   arm->score();
+  pros::delay(600);
+
+  // get knocked ring
+  pros::Task ign_3{[]() {
+    pros::delay(600);
+    clamp.set_state(false);
+  }};
+  move_distance(1.3);
+
+  turn_to(-280.0);
+  move_distance(-0.76);
+  turn_to(0.0);
+  move_distance(-0.075);
+  arm->score_alliance();
+  pros::delay(500);
   move_distance(0.3);
 }
 
 void worlds_awp2_red(std::shared_ptr<TankPID> tank_pid,
                      std::shared_ptr<Boomerang> boom,
                      std::shared_ptr<PurePursuit> pp) {
-  odom->set_position(-0.3, -1.5);
-  odom->set_heading(180.0);
+  odom->set_position(0.6, -1.5);
+  odom->set_heading(0.0);
   clamp.set_state(false);
-  doinker.set_state(true);
+  doinker.set_state(false);
   lifter.set_state(false);
 
-  // swing top ring off
-  move_distance(-0.3);
-  turn_to(120.0);
-
-  /*
-  // get goal
-  boom->move_to_pose({-0.6, -0.6, 150.0}, 1300);
-  clamp.set_state(true);
-  turn_to_angle(-90.0);
+  // get ring
   arm->intake(12000);
-  tank_pid->move_to_pose({-1.2, -0.6}, 1000);
-  move_distance(-0.05);
-  arm->intake(0);
-  arm->score();
+  boom->move_to_pose({1.2, -0.6, 45.0}, 2000);
+  turn_to(90.0);
 
-  // set goal to a "safe" place
-  boom->move_to_pose({-0.6, -1.2, 180.0}, 1500);
+  // get goal
+  pros::Task ign{[]() {
+    pros::delay(800);
+    clamp.set_state(true);
+  }};
+  boom->move_to_pose({0.65, -0.6, 90.0}, 1000);
+  pros::delay(400);
+  arm->score();
+  pros::delay(1500);
+
+  // go near pos corner
+  boom->move_to_pose({1.5, -1.2, 180.0}, 2000);
+}
+
+void skills(std::shared_ptr<TankPID> tank_pid,
+            std::shared_ptr<Boomerang> boom,
+            std::shared_ptr<PurePursuit> pp) {
+  odom->set_heading(0.0);
+  odom->set_position(0.0, -1.57);
+
+  clamp.set_state(false);
+  doinker.set_state(false);
+  lifter.set_state(false);
+
+  // alliance stake
+  pros::delay(40);
+  arm->score_alliance();
+  pros::delay(700);
+  move_distance(0.29);
+
+  // get goal
+  turn_to(-90.0);
+  boom->move_to_pose({0.62, -1.2, -90.0}, 900);
+  clamp.set_state(true);
+  turn_to(0.0);
+
+  // get rings in front of ladder
+  arm->intake(12000);
+  boom->move_to_pose({0.6, -0.4, 0.0}, 600);
+  boom->move_to_pose({1.62, -0.06, 90.0}, 1000);
+  pros::delay(300);
+  turn_to(190.0);
+  move_distance(0.1);
+  pros::delay(300);
+  arm->score();
+  pros::delay(800);
+
+  // get 2 more rings
+  boom->move_to_pose({1.18, -1.2, 180.0}, 1600);
+  pros::delay(800);
+  arm->score();
+  pros::delay(700);
+
+  // get 2 more rings
+  move_distance(0.4);
+  pros::delay(200);
+  move_distance(-0.6);
+  turn_to(135.0);
+  move_distance(0.4);
+  pros::delay(200);
+  move_distance(-0.3);
+
+  // store goal
+  turn_to(0.0);
+  arm->score();
+  boom->move_to_pose({1.6, -1.6, -45.0}, 2000);
   clamp.set_state(false);
 
-  // weave around rings
-  arm->intake(12000);
-  boom->move_to_pose({0.0, -0.9, 90}, 1100);
-  boom->move_to_pose({0.6, -1.5, 135}, 1500);
-  turn_to_angle(90.0);
-  */
+  // get other goal
+  move_distance(0.1);
+  turn_to(90.0);
+  pros::Task ign{[]() {
+    pros::delay(2100);
+    clamp.set_state(true);
+  }};
+  boom->move_to_pose({-0.62, -1.2, 90.0}, 2500);
+  boom->move_to_pose({-1.6, -1.6, 45.0}, 3000);
 }
 
 void autonomous() {
@@ -385,7 +449,7 @@ void autonomous() {
   std::unique_ptr<Condition<double>> pid_cond{
       new Condition<double>{{0.0, 0.03}, 50}
   };
-  std::unique_ptr<PIDF> lin_pid = std::make_unique<PIDF>(3.0, 0.0, 0.0);
+  std::unique_ptr<PIDF> lin_pid = std::make_unique<PIDF>(3.1, 0.0, 0.0);
   std::unique_ptr<PIDF> rot_pid = std::make_unique<PIDF>(0.28, 0.0, 0.022);
   auto tank_pid = std::make_shared<TankPID>(chassis,
                                             odom,
@@ -399,12 +463,10 @@ void autonomous() {
   std::shared_ptr<LinearMotionProfile> slow_profile{
       new TrapezoidalMotionProfile(1.0, 3.0, 2.0)};
 
-  /*
-  // ! not rlly working
-  local_awp(tank_pid, boom);
-  */
+  // tuning();
   worlds_awp1_blue(tank_pid, boom, pp);
-  // worlds_awp2_red(tank_pid, boom, pp);
+  // worlds_awp1_red(tank_pid, boom, pp);
+  // skills(tank_pid, boom, pp);
 
   auto trajectory =
       SplineTrajectory{
@@ -428,6 +490,6 @@ void autonomous() {
   // TODO: profile linear motion
 
   arm->intake(0);
-  clamp.set_state(false);
+  // clamp.set_state(false);
   subzero::log("[i]: auto finished in %d ms", pros::millis() - start_ts);
 }

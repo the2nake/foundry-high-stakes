@@ -109,7 +109,7 @@ void configure_chassis() {
                            (rpm > K_EPSILON ? 0.05 * std::abs(rpm) / rpm : 0);
                   }))
           .with_geometry(0.165, 0.248)
-          .with_rot_pref(0.3)
+          .with_rot_pref(0.6)
           .with_vel(1.76)
           .build();
 }
