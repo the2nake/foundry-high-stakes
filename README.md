@@ -1,8 +1,8 @@
-# 3818 (~) High Stakes Codebase
+# 3818D High Stakes Codebase
 
-## Description
+Watch our reveal video!
 
-The codebase for a certain team of 3818, currently consisting of 4 members. The `main` branch should always be functional.
+<iframe width="560" height="315" src="https://www.youtube.com/embed/y0sAqeBquyk?si=TzQgcpja-kDgG06w" title="YouTube video player" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" referrerpolicy="strict-origin-when-cross-origin" allowfullscreen></iframe>
 
 ## Features
 
